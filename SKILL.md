@@ -18,9 +18,13 @@ Produce a standalone, self-contained HTML page that a human can skim in 30 secon
 
 ## Execution Model
 
-The frontmatter declares `execution.model: claude-sonnet-5`. When the active session runs a different model, delegate the HTML generation (steps 2–5) to a background subagent running the declared model. The subagent receives four inputs: (1) the full source document content, (2) methodology from `references/methodology.md`, (3) the template from `assets/template.html`, (4) the target output path. The main session handles orchestration (step 1) and publishing (steps 6–8).
+The frontmatter declares `execution.model: claude-sonnet-5` as a **quality preference**, not a hard requirement. The intent is to run HTML generation on a model with strong visual-design and long-output capability. Behavior by runtime:
 
-How to spawn the subagent depends on the runtime — use whatever background-agent mechanism is available. The runtime's own documentation covers the specifics.
+- If the runtime can spawn a background subagent with the declared model, do so — delegate steps 2–5 to it.
+- If the runtime cannot use the declared model (e.g. it only has access to its own model family), use the strongest available model that supports background execution.
+- If no background delegation is available, run steps 2–5 inline in the current session.
+
+In all cases the subagent (or inline execution) receives four inputs: (1) the full source document content, (2) methodology from `references/methodology.md`, (3) the template from `assets/template.html`, (4) the target output path. The main session handles orchestration (step 1) and publishing (steps 6–8). The output contract (Quality Standard below) is the same regardless of which model or execution path is used.
 
 ## Workflow
 
