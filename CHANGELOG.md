@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0] — 2026-07-25
+
+### Changed
+
+- SKILL.md rewritten for runtime-neutral compatibility (Claude Code + Codex).
+- Execution model: declared model is now a quality preference with 3-tier fallback, not a hard requirement.
+- Tool references replaced with action descriptions (no runtime-specific tool names).
+- Pages CLI path discovery via `zylos info pages --json` instead of hardcoded path.
+- Added explicit Quality Standard section (7 declarative acceptance criteria).
+
 ## [0.1.0] — 2026-07-24
 
 ### Added
