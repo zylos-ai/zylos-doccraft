@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3] — 2026-07-25
+
+### Fixed
+
+- SKILL.md step 6: clarify that `share` returns a relative path, not a full URL — agent must combine with host domain before sharing.
+
 ## [0.2.2] — 2026-07-25
 
 ### Fixed

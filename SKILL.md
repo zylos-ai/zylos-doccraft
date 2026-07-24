@@ -1,6 +1,6 @@
 ---
 name: doccraft
-version: 0.2.2
+version: 0.2.3
 description: >-
   Turn a document (research doc, architecture proposal, 方案文档, report, decision
   memo) into a beautiful, human-friendly standalone HTML page — conclusion-first
@@ -60,7 +60,7 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
    register --source <abs-path>.html --uri <topic>/<slug>
    share <topic>/<slug> --duration 30d
    ```
-   If `register` fails with `source_outside_allowed_root`, the output path is not in any configured `allowedSources`. Add it via the pages config before retrying. Use the returned share URL as-is (it carries the host's pages domain).
+   If `register` fails with `source_outside_allowed_root`, the output path is not in any configured `allowedSources`. Add it via the pages config before retrying. The `share` command returns a relative path (e.g. `/pages/s/<token>`). Combine it with the host's pages domain to form the full URL before sharing with users.
 
 7. **Verify the published page**: fetch the share URL (expect HTTP 200 with page content); run the 常见失误清单 from methodology.md (dark theme, mobile width, sensitive info, link validity, version sync).
 

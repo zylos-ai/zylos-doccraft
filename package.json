@@ -1,6 +1,6 @@
 {
   "name": "zylos-doccraft",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Document design skill for zylos agents — methodology, templates, and workflow for generating beautiful HTML pages",
   "type": "module",
   "private": true,
