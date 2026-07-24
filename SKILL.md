@@ -6,9 +6,8 @@ description: >-
   information architecture, diagrams, status boards, progressive disclosure, dual
   theme, mobile-ready — published via the pages component. Use when asked for a
   "可视化版", "美观易懂的版本", "HTML 版", "visual version", "做成网页", "readable
-  version", or when delivering a long/dense document to a human reader (especially
-  Howard) who needs to grasp it quickly without losing detail. NOT for PR reviews
-  (use pr-review-doc) and NOT for plain markdown publishing (use pages directly).
+  version", or when delivering a long/dense document to a human reader who needs
+  to grasp it quickly without losing detail.
 execution:
   model: claude-sonnet-5
 ---
@@ -19,22 +18,7 @@ Produce a standalone, self-contained HTML page that a human can skim in 30 secon
 
 ## Execution Model
 
-This skill declares `execution.model: claude-sonnet-5`. When the main session is running on a different model, delegate the HTML writing (steps 2–5 below) to a subagent with model `claude-sonnet-5`. The main session handles orchestration only: identifying the need, preparing inputs, spawning the subagent, and publishing the result (steps 6–8).
-
-When the main session is already on `claude-sonnet-5`, run inline as usual — no subagent needed.
-
-Subagent delegation pattern (Claude Code):
-```
-Agent({
-  model: "sonnet",
-  prompt: "<full skill instructions + source content + output path>",
-  description: "doc-design writer"
-})
-```
-
-Note: the Claude Code Agent tool only accepts alias enums (`sonnet`/`opus`/`haiku`/`fable`); `"sonnet"` resolves to the latest Sonnet, i.e. `claude-sonnet-5`. Everywhere a precise model string is accepted, write `claude-sonnet-5` — never a broad alias.
-
-The subagent must receive: (1) the full source document content, (2) the methodology from `references/methodology.md`, (3) the template from `assets/template.html`, (4) the target output path. It returns the written HTML file. The main session then publishes and verifies.
+Declares `execution.model: claude-sonnet-5`. When the main session runs a different model, delegate HTML writing (steps 2–5) to a Sonnet subagent. The subagent receives: source content, methodology, template, and output path. The main session orchestrates and publishes.
 
 ## Workflow
 
@@ -63,13 +47,9 @@ The subagent must receive: (1) the full source document content, (2) the methodo
 
 8. **Record the pairing.** When the source doc later gets updated, the visual page must be updated in the same pass — note the source→page mapping wherever the source doc's lifecycle is tracked (e.g. the project's state.md entry).
 
-## Reference example
-
-First production use: 分身架构论证 visual version (2026-07-04) — source `~/zylos/workspace/agent-avatar-architecture/avatar-architecture-visual.html`, built from a 27KB Chinese architecture doc. Shows all components in real use: TL;DR facts, A/B/C option comparison with SVG topology diagrams + highlighted recommendation, DMZ dual-zone, layers, Rule-of-Two legs, phase timeline, Q1–Q6 status board, deep arguments in collapsibles.
-
 ## Files
 
-| File | When to read |
+| File | Purpose |
 |---|---|
-| `references/methodology.md` | Always, at step 2 — info organization, visual principles, component decision table, pre-publish checklist |
-| `assets/template.html` | Step 4 — copy as starting point; skim its CSS comments for token semantics |
+| `references/methodology.md` | Info organization, visual principles, component decision table, pre-publish checklist |
+| `assets/template.html` | Starting-point HTML with dual-theme CSS tokens and all component examples |
