@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] — 2026-07-25
+
+### Fixed
+
+- SKILL.md: corrected pages publish prerequisite — output path must be in pages `externalFiles.allowedSources`, not assumed to be in an "always-allowed root". Added error recovery guidance for `source_outside_allowed_root`.
+
 ## [0.2.1] — 2026-07-25
 
 ### Changed

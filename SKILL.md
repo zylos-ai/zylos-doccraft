@@ -1,6 +1,6 @@
 ---
 name: doccraft
-version: 0.2.1
+version: 0.2.2
 description: >-
   Turn a document (research doc, architecture proposal, 方案文档, report, decision
   memo) into a beautiful, human-friendly standalone HTML page — conclusion-first
@@ -47,7 +47,7 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 
 3. **Sketch the info architecture** before writing any HTML: the one-sentence conclusion, the ≤3 key numbers, the section list, which blocks become diagrams/boards/collapsibles. If the source has a decision list, it becomes a status board near the end.
 
-4. **Copy `assets/template.html` to the output location.** Default output directory: `~/zylos/http/public/pages/docs/<slug>.html` (inside the pages component's always-allowed content root). Writing to other directories requires an `externalFiles.allowedSources` entry in `~/zylos/components/pages/config.json`. The template contains the full dual-theme token system, CJK typography, and one example of every component. Delete unused component examples; do not invent a new design system unless the user asked for a specific visual direction.
+4. **Copy `assets/template.html` to the output location.** Default output directory: `~/zylos/http/public/pages/docs/<slug>.html`. The output path must be within one of the pages component's `externalFiles.allowedSources` entries (configured in `~/zylos/components/pages/config.json`). If `pages register` returns `source_outside_allowed_root`, add the target directory to `allowedSources` first. The template contains the full dual-theme token system, CJK typography, and one example of every component. Delete unused component examples; do not invent a new design system unless the user asked for a specific visual direction.
 
 5. **Build the page.** Rules that override convenience:
    - Progressive disclosure never drops content — collapsed ≠ cut.
@@ -60,7 +60,7 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
    register --source <abs-path>.html --uri <topic>/<slug>
    share <topic>/<slug> --duration 30d
    ```
-   Use the returned share URL as-is (it carries the host's pages domain).
+   If `register` fails with `source_outside_allowed_root`, the output path is not in any configured `allowedSources`. Add it via the pages config before retrying. Use the returned share URL as-is (it carries the host's pages domain).
 
 7. **Verify the published page**: fetch the share URL (expect HTTP 200 with page content); run the 常见失误清单 from methodology.md (dark theme, mobile width, sensitive info, link validity, version sync).
 
