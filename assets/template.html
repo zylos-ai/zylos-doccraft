@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title><!-- 文档标题 --></title>
+<style>
+  /* ============================================================
+     doc-design 设计系统 v1 · 双主题 token
+     调色思路：冷调纸面 + 单一 accent（青绿=结构/信任感）。
+     换主题色时整体替换 accent 系，勿加第二个装饰色；
+     语义色（settled/converge/open/threat）独立于 accent，不算装饰。
+     ============================================================ */
+  :root {
+    --bg: #F6F7F5;
+    --surface: #FFFFFF;
+    --surface2: #EFF1EE;
+    --ink: #22252E;
+    --ink2: #5C6270;
+    --hairline: #E2E4DF;
+    --accent: #0E7C72;
+    --accent-soft: #E0F0EE;
+    --settled: #2E7D46;
+    --settled-soft: #E4F1E8;
+    --converge: #A96F14;
+    --converge-soft: #F7EEDC;
+    --open: #6B7280;
+    --open-soft: #ECEDEF;
+    --threat: #B3423A;
+    --threat-soft: #F7E7E5;
+    --code-bg: #EEF0ED;
+    --radius: 10px;
+    --maxw: 880px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161B; --surface: #1C1F26; --surface2: #23262E;
+      --ink: #E6E8EB; --ink2: #9AA1AC; --hairline: #2C303A;
+      --accent: #4EC2B2; --accent-soft: #17332F;
+      --settled: #5CBB7B; --settled-soft: #1B2E22;
+      --converge: #D8A44A; --converge-soft: #332B18;
+      --open: #98A0AC; --open-soft: #262A32;
+      --threat: #E07A72; --threat-soft: #362020;
+      --code-bg: #23262E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161B; --surface: #1C1F26; --surface2: #23262E;
+    --ink: #E6E8EB; --ink2: #9AA1AC; --hairline: #2C303A;
+    --accent: #4EC2B2; --accent-soft: #17332F;
+    --settled: #5CBB7B; --settled-soft: #1B2E22;
+    --converge: #D8A44A; --converge-soft: #332B18;
+    --open: #98A0AC; --open-soft: #262A32;
+    --threat: #E07A72; --threat-soft: #362020;
+    --code-bg: #23262E;
+  }
+  :root[data-theme="light"] {
+    --bg: #F6F7F5; --surface: #FFFFFF; --surface2: #EFF1EE;
+    --ink: #22252E; --ink2: #5C6270; --hairline: #E2E4DF;
+    --accent: #0E7C72; --accent-soft: #E0F0EE;
+    --settled: #2E7D46; --settled-soft: #E4F1E8;
+    --converge: #A96F14; --converge-soft: #F7EEDC;
+    --open: #6B7280; --open-soft: #ECEDEF;
+    --threat: #B3423A; --threat-soft: #F7E7E5;
+    --code-bg: #EEF0ED;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    font-size: 16px; line-height: 1.78;   /* 中文正文需要比西文更松的行高 */
+    padding: 0 20px 80px;
+  }
+  main { max-width: var(--maxw); margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88em; background: var(--code-bg); padding: 1px 6px; border-radius: 5px;
+  }
+
+  /* ---------- 页头 ---------- */
+  header { padding: 52px 0 8px; }
+  .doc-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+  .badge { font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 3px 10px; border-radius: 100px; white-space: nowrap; }
+  .badge.version { background: var(--accent-soft); color: var(--accent); }
+  .badge.draft { background: var(--converge-soft); color: var(--converge); }
+  .badge.plain { background: var(--open-soft); color: var(--open); }
+  h1 { font-size: clamp(26px, 4.5vw, 36px); font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; text-wrap: balance; margin-bottom: 10px; }
+  .subtitle { color: var(--ink2); font-size: 15px; max-width: 46em; }
+
+  /* ---------- 目录 chips ---------- */
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 10px; }
+  nav.toc a { font-size: 13px; color: var(--ink2); background: var(--surface); border: 1px solid var(--hairline); padding: 5px 12px; border-radius: 100px; }
+  nav.toc a:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
+  /* ---------- TL;DR 结论卡 ---------- */
+  .tldr { background: var(--surface); border: 1px solid var(--hairline); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 26px 28px; margin: 26px 0; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .tldr p.lead { font-size: 17.5px; font-weight: 600; line-height: 1.65; margin-bottom: 14px; text-wrap: balance; }
+  .tldr .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .fact { background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+  .fact .num { font-size: 21px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .fact .cap { font-size: 12.5px; color: var(--ink2); line-height: 1.5; margin-top: 2px; }
+
+  /* ---------- 章节 ---------- */
+  section { margin-top: 56px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--hairline); padding-bottom: 10px; margin-bottom: 22px; }
+  .sec-num { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: .05em; }
+  h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.005em; text-wrap: balance; }
+  h3 { font-size: 17px; font-weight: 700; margin: 26px 0 10px; }
+  section > p, section > ul { margin-bottom: 12px; }
+  section ul { padding-left: 1.3em; }
+  section li { margin-bottom: 6px; }
+  .note { color: var(--ink2); font-size: 14px; }
+
+  /* ---------- 卡片 ---------- */
+  .cards { display: grid; gap: 14px; margin: 16px 0; }
+  .cards.two { grid-template-columns: 1fr 1fr; }
+  .cards.three { grid-template-columns: repeat(3, 1fr); }
+  .card { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 18px 20px; }
+  .card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card p { font-size: 14px; color: var(--ink2); line-height: 1.7; }
+  .card p strong, .card li strong { color: var(--ink); }
+  .card ul { font-size: 14px; color: var(--ink2); padding-left: 1.2em; margin-top: 6px; }
+
+  /* ---------- 状态 pill（语义色，不是装饰） ---------- */
+  .pill { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 100px; white-space: nowrap; }
+  .pill.good { background: var(--settled-soft); color: var(--settled); }
+  .pill.warn { background: var(--converge-soft); color: var(--converge); }
+  .pill.bad { background: var(--threat-soft); color: var(--threat); }
+  .pill.neutral { background: var(--open-soft); color: var(--open); }
+  .pill.accent { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- 表格（永远包在 tablewrap 里防横向溢出） ---------- */
+  .tablewrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  th { font-size: 12.5px; letter-spacing: .03em; color: var(--ink2); background: var(--surface2); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ---------- callout ---------- */
+  .callout { border-radius: var(--radius); padding: 16px 20px; margin: 16px 0; font-size: 14.5px; line-height: 1.75; border: 1px solid var(--hairline); }
+  .callout.threat { background: var(--threat-soft); border-color: color-mix(in srgb, var(--threat) 30%, transparent); }
+  .callout.insight { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+  .callout.honest { background: var(--converge-soft); border-color: color-mix(in srgb, var(--converge) 30%, transparent); }
+  .callout .callout-title { font-weight: 700; margin-bottom: 6px; font-size: 14px; }
+
+  /* ---------- 渐进披露 details ---------- */
+  details { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius); margin: 12px 0; overflow: hidden; }
+  summary { cursor: pointer; padding: 13px 18px; font-size: 14.5px; font-weight: 600; color: var(--ink); list-style: none; display: flex; align-items: center; gap: 10px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "＋"; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+  details[open] summary::before { content: "－"; }
+  details[open] summary { border-bottom: 1px solid var(--hairline); }
+  .details-body { padding: 16px 20px; font-size: 14.5px; color: var(--ink2); }
+  .details-body p { margin-bottom: 10px; }
+  .details-body p strong, .details-body li strong { color: var(--ink); }
+  .details-body ul, .details-body ol { padding-left: 1.3em; margin-bottom: 10px; }
+  .details-body li { margin-bottom: 6px; }
+
+  /* ---------- 时间线 / 阶段（仅用于真实序列） ---------- */
+  .phases { display: grid; gap: 0; margin: 16px 0; }
+  .phase { display: grid; grid-template-columns: 46px 1fr; gap: 16px; }
+  .phase .ptick { display: flex; flex-direction: column; align-items: center; }
+  .phase .pdot { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; font-family: ui-monospace, Menlo, monospace; }
+  .phase .pline { width: 2px; flex: 1; background: var(--hairline); margin: 4px 0; }
+  .phase:last-child .pline { display: none; }
+  .phase .pbody { padding-bottom: 22px; }
+  .phase h4 { font-size: 15px; margin-bottom: 4px; }
+  .phase p { font-size: 14px; color: var(--ink2); }
+
+  /* ---------- 决策/问题状态面板 ---------- */
+  .qboard { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .qcard { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 16px 18px; }
+  .qcard .qtop { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .qcard h4 { font-size: 14.5px; }
+  .qcard p { font-size: 13.5px; color: var(--ink2); line-height: 1.7; }
+
+  /* ---------- 双区对照（DMZ 式左右分区 + 中间网关） ---------- */
+  .dmz { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch; margin: 18px 0; }
+  .zone { border-radius: var(--radius); padding: 18px 20px; border: 1.5px solid var(--hairline); }
+  .zone h4 { font-size: 15px; margin-bottom: 8px; }
+  .zone ul { font-size: 13.5px; color: var(--ink2); padding-left: 1.2em; }
+  .zone.exposed { border-color: color-mix(in srgb, var(--threat) 45%, transparent); background: color-mix(in srgb, var(--threat-soft) 55%, var(--surface)); }
+  .zone.inner { border-color: color-mix(in srgb, var(--settled) 45%, transparent); background: color-mix(in srgb, var(--settled-soft) 55%, var(--surface)); }
+  .gateway { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 14px; gap: 6px; color: var(--ink2); font-size: 12px; text-align: center; }
+  .gateway .gate { background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 12px; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+
+  /* ---------- 层级条（三层身份式的堆叠说明） ---------- */
+  .layers { display: grid; gap: 10px; margin: 16px 0; }
+  .layer { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 18px; }
+  .layer .lname { font-weight: 700; font-size: 14.5px; }
+  .layer .ldesc { font-size: 13.5px; color: var(--ink2); }
+
+  /* ---------- 内嵌 SVG 图的公共类 ---------- */
+  .nodefill { fill: var(--surface2); stroke: var(--hairline); }
+  .nodemain { fill: var(--accent-soft); stroke: var(--accent); }
+  .nodesub { fill: var(--converge-soft); stroke: var(--converge); }
+  .edge { stroke: var(--ink2); stroke-width: 1.3; }
+  .edgectl { stroke: var(--accent); stroke-width: 1.6; }
+  .scopebox { fill: none; stroke: var(--accent); stroke-dasharray: 4 4; stroke-width: 1.2; opacity: .65; }
+  .svgtext { font-size: 10.5px; fill: var(--ink); font-family: inherit; }
+  .svgtext2 { font-size: 9.5px; fill: var(--ink2); font-family: inherit; }
+
+  footer { margin-top: 70px; padding-top: 18px; border-top: 1px solid var(--hairline); font-size: 13px; color: var(--ink2); }
+  footer ul { list-style: none; padding: 0; }
+  footer li { margin-bottom: 4px; }
+
+  /* ---------- 移动端 ---------- */
+  @media (max-width: 720px) {
+    .cards.two, .cards.three, .qboard { grid-template-columns: 1fr; }
+    .tldr .facts { grid-template-columns: 1fr; }
+    .dmz { grid-template-columns: 1fr; }
+    .gateway { flex-direction: row; padding: 10px 0; }
+    .layer { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<!-- 页头：徽章行（版本/状态/日期）+ 标题 + 副标题（含逐字版等外链）+ 目录 chips -->
+<header>
+  <div class="doc-meta">
+    <span class="badge version">v1</span>
+    <span class="badge draft">状态徽章</span>
+    <span class="badge plain">日期 · 作者</span>
+  </div>
+  <h1><!-- 文档标题 --></h1>
+  <p class="subtitle"><!-- 一句话说明本页是什么；如有逐字版/数据源，在这里给链接 --></p>
+  <nav class="toc">
+    <a href="#tldr">结论</a>
+    <!-- 每个 section 一个 chip -->
+  </nav>
+</header>
+
+<!-- TL;DR：一句话结论 + 至多 3 个关键数字。读者 30 秒内必须能带走主干 -->
+<div class="tldr" id="tldr">
+  <div class="eyebrow">一句话结论</div>
+  <p class="lead"><!-- 最重要的一句话 --></p>
+  <div class="facts">
+    <div class="fact"><div class="num">数字</div><div class="cap">这个数字为什么重要</div></div>
+  </div>
+</div>
+
+<section id="sec1">
+  <div class="sec-head"><span class="sec-num">§1</span><h2>章节标题</h2></div>
+  <p>正文。</p>
+
+  <!-- 并列信息 → 卡片；卡片标题可带状态 pill -->
+  <div class="cards two">
+    <div class="card"><h4>卡片标题 <span class="pill good">正常</span></h4><p>说明文字。</p></div>
+    <div class="card"><h4>卡片标题 <span class="pill bad">风险</span></h4><p>说明文字。</p></div>
+  </div>
+
+  <!-- 关键洞察/警示 → callout（insight/honest/threat 三种语气） -->
+  <div class="callout insight">
+    <div class="callout-title">关键洞察</div>
+    正文可见层只放结论级内容。
+  </div>
+
+  <!-- 深度论证 → details 折叠（信息完整，默认收起） -->
+  <details>
+    <summary>展开看完整论证</summary>
+    <div class="details-body"><p>细节内容。</p></div>
+  </details>
+</section>
+
+<!-- 更多组件按需取用：.tablewrap 表格 / .phases 时间线 / .qboard 决策面板 / .dmz 双区对照 / .layers 层级条 / 内嵌 SVG -->
+
+<footer>
+  <ul>
+    <li><strong>相关链接</strong>：逐字版、数据源、关联 PR 等</li>
+  </ul>
+  <p style="margin-top:12px;">Generated by Luna · 日期 · 文档状态声明</p>
+</footer>
+
+</main>
+</body>
+</html>
