@@ -1,8 +1,21 @@
 {
   "name": "zylos-doccraft",
-  "version": "0.2.0",
-  "description": "Document design skill for zylos agents — methodology, templates, and CLI for generating beautiful HTML pages",
+  "version": "0.2.1",
+  "description": "Document design skill for zylos agents — methodology, templates, and workflow for generating beautiful HTML pages",
+  "type": "module",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zylos-ai/zylos-doccraft.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zylos-ai/zylos-doccraft/issues"
+  },
+  "homepage": "https://github.com/zylos-ai/zylos-doccraft#readme",
+  "engines": {
+    "node": ">=20"
+  },
   "zylos": {
     "type": "skill",
     "displayName": "Doccraft",

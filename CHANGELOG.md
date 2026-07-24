@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1] — 2026-07-25
+
+### Changed
+
+- SKILL.md frontmatter: added `type: utility`, `lifecycle`, `upgrade`, `dependencies` per component template spec.
+- package.json: added `type: module`, `repository`, `bugs`, `homepage`, `license`, `engines` fields.
+- README: added pre-registry install instructions and runtime compatibility section.
+
 ## [0.2.0] — 2026-07-25
 
 ### Changed

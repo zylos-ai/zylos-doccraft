@@ -1,6 +1,6 @@
 ---
 name: doccraft
-version: 0.2.0
+version: 0.2.1
 description: >-
   Turn a document (research doc, architecture proposal, 方案文档, report, decision
   memo) into a beautiful, human-friendly standalone HTML page — conclusion-first
@@ -9,6 +9,18 @@ description: >-
   "可视化版", "美观易懂的版本", "HTML 版", "visual version", "做成网页", "readable
   version", or when delivering a long/dense document to a human reader who needs
   to grasp it quickly without losing detail.
+type: utility
+
+lifecycle:
+  npm: false
+
+upgrade:
+  repo: zylos-ai/zylos-doccraft
+  branch: main
+
+dependencies:
+  - pages
+
 execution:
   model: claude-sonnet-5
 ---
