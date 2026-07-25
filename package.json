@@ -1,7 +1,7 @@
 {
   "name": "zylos-doccraft",
-  "version": "0.2.3",
-  "description": "Document design skill for zylos agents — methodology, templates, and workflow for generating beautiful HTML pages",
+  "version": "0.2.4",
+  "description": "Document design skill for zylos agents — methodology, templates, and workflow for generating beautiful self-contained HTML pages",
   "type": "module",
   "private": true,
   "license": "MIT",
