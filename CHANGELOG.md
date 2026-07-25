@@ -2,6 +2,16 @@
 
 ## [0.2.4] — 2026-07-25
 
+### Security
+
+- **Share links are no longer created by default.** Step 6 previously ran `share <uri> --duration 30d` as a mandatory part of the workflow, so every document the skill produced got a **password-free public URL** — the pages component's `auth.enabled` protects `/pages/<uri>`, but `share` mints an `/s/<token>` route that bypasses authentication by design (`pages/src/security/auth.js`, "Share access session bypass"). Confirmed empirically: a cookie-less request to such a URL returns the page body, not a login prompt.
+  - Step 6 now **registers only**; a registered page stays behind the password.
+  - `share` is opt-in — created only when the user explicitly asks to share the document, and the reply must state that the link is password-free and public.
+  - Shortest fitting duration; `permanent` only if requested by name, since permanent shares are exempt from expiry cleanup (`DELETE ... WHERE expires_at != 0`) and can only be removed by hand.
+  - Re-run the sensitive-info scan against the actual page contents before sharing; internal-only material (headcount, pricing, customer/candidate data, client project docs) needs the owner's explicit approval.
+  - Documented that `unshare <uri>` revokes **every** token under that URI, including permanent ones sharing the same URI.
+- Step 5's scan note and step 7's verification updated to match.
+
 ### Changed
 
 - **Decoupled from the `pages` component.** The artifact is a self-contained single HTML file, so hosting was never required for the skill to deliver its value. `pages` is now a recommended companion rather than a dependency.

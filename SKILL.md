@@ -49,21 +49,28 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 5. **Build the page.** Rules that override convenience:
    - Progressive disclosure never drops content — collapsed ≠ cut.
    - Diagrams: HTML/CSS boxes first, simple inline SVG second (colors via CSS custom-property tokens so both themes work).
-   - Sensitive-info scan before publishing: no internal IPs/domains (100.64.*, 192.168.*, 内网 hostnames), chat IDs, platform IDs (ou_/oc_/cli_), credentials. Share links are public URLs only.
+   - Sensitive-info scan before publishing: no internal IPs/domains (100.64.*, 192.168.*, 内网 hostnames), chat IDs, platform IDs (ou_/oc_/cli_), credentials. A share link is a password-free public URL (step 6) — scan on that assumption.
    - Footer must state which source version the page is synced to and link the verbatim source.
 
 6. **Deliver.** The artifact is a single self-contained HTML file — no hosting component is required for it to be complete. Choose the delivery path by what is installed:
 
-   **If the `pages` component is available** (`zylos info pages --json` succeeds), publish it for a share link. Read the `skillDir` field from that output, then invoke `<skillDir>/src/cli/pages.js`:
+   **If the `pages` component is available** (`zylos info pages --json` succeeds), register it. Read the `skillDir` field from that output, then invoke `<skillDir>/src/cli/pages.js`:
    ```
    register --source <abs-path>.html --uri <topic>/<slug>
-   share <topic>/<slug> --duration 30d
    ```
-   The output path must be within one of the pages component's `externalFiles.allowedSources` entries (configured in `~/zylos/components/pages/config.json`). If `register` fails with `source_outside_allowed_root`, add the target directory to `allowedSources` first, or move the file into an already-allowed directory. The `share` command returns a relative path (e.g. `/pages/s/<token>`); combine it with the host's pages domain to form the full URL before sharing with users.
+   **Register only. Do NOT create a share link by default.** A registered page sits behind the pages component's password; report the internal URL (or the file path) and stop there. The output path must be within one of the pages component's `externalFiles.allowedSources` entries (configured in `~/zylos/components/pages/config.json`). If `register` fails with `source_outside_allowed_root`, add the target directory to `allowedSources` first, or move the file into an already-allowed directory.
+
+   **Share links are opt-in, never routine.** `share <topic>/<slug> --duration <24h|7d|30d>` mints a URL that **bypasses the password entirely** — anyone holding it can read the page without logging in, for the whole duration. Create one only when the user explicitly asks to share the document with someone, and when you do:
+   - Say plainly, in the same message as the link, that it is a password-free public URL.
+   - Pick the shortest duration that fits the purpose. Do not reach for `30d` reflexively, and never use `permanent` unless the user asks for it by name — permanent shares are exempt from expiry cleanup and can only be removed by hand.
+   - Before sharing, re-run the step-5 sensitive-info scan against what the page actually contains. Internal-only material (headcount, pricing, customer or candidate data, client project documents) must not go on a share link without the owner's explicit say-so.
+   - Note that `unshare <uri>` revokes **every** token under that URI, including permanent ones — check what else is attached before revoking.
+
+   The `share` command returns a relative path (e.g. `/pages/s/<token>`); combine it with the host's pages domain to form the full URL.
 
    **If `pages` is not installed**, the skill still delivers in full: report the absolute path of the generated file to the user, and hand it over by whatever channel is in use (file upload, attachment, or any static file server). Do not treat a missing `pages` component as a failure, and do not install it as a side effect — say the file is ready and where it is.
 
-7. **Verify the result**: if published, fetch the share URL (expect HTTP 200 with page content); if delivered as a file, open it and confirm it renders standalone. Either way, run the 常见失误清单 from methodology.md (dark theme, mobile width, sensitive info, link validity, version sync).
+7. **Verify the result**: if registered, fetch the internal URL and confirm the page renders; if a share link was explicitly requested, fetch that too (expect HTTP 200 with page content); if delivered as a file, open it and confirm it renders standalone. Either way, run the 常见失误清单 from methodology.md (dark theme, mobile width, sensitive info, link validity, version sync).
 
 8. **Record the source→page pairing.** When the source doc is later updated, the visual page must be updated in the same pass — note the mapping wherever the source doc's lifecycle is tracked.
 
