@@ -26,7 +26,7 @@ zylos add zylos-ai/zylos-doccraft
 
 The skill is triggered when the agent needs to produce a document for human consumption. Trigger words include "可视化版", "HTML 版", "做成网页", "readable version".
 
-The agent reads the methodology, uses the template as a starting point, generates HTML, and publishes via the `pages` component.
+The agent reads the methodology, uses the template as a starting point, and generates a self-contained HTML file. Delivery is pluggable: if the `pages` component is installed, the file is published there for a share link; if not, the skill hands over the file path directly. `pages` is a recommended companion, not a requirement — the artifact has no external dependencies of its own.
 
 ## Runtime Compatibility
 
