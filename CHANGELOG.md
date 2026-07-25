@@ -10,7 +10,8 @@
   - Shortest fitting duration; `permanent` only if requested by name, since permanent shares are exempt from expiry cleanup (`DELETE ... WHERE expires_at != 0`) and can only be removed by hand.
   - Re-run the sensitive-info scan against the actual page contents before sharing; internal-only material (headcount, pricing, customer/candidate data, client project docs) needs the owner's explicit approval.
   - Documented that `unshare <uri>` revokes **every** token under that URI, including permanent ones sharing the same URI.
-- Step 5's scan note and step 7's verification updated to match.
+- Step 5's scan note updated to match.
+- **Step 7 rewritten so it cannot pass on a login page.** Verifying a registered page over HTTP is a trap: the route is password-protected and the agent has no session, so it answers `302 → /pages/login`. Following the redirect (`curl -L`, or any client that follows by default) lands on the login form, which itself returns `200` with a full HTML body — an agent told to "expect HTTP 200 with page content" would mark that a pass having read none of its own document. Step 7 now verifies the artifact by opening the file directly, verifies registration via `pages list` (noting that `--q` matches the *title*, not the URI), states that `302 → /pages/login` is the correct healthy response for a registered page and `404` means registration failed, and keeps `200`-with-content only for the share-link path, where bypassing auth is the intended behaviour.
 
 ### Changed
 

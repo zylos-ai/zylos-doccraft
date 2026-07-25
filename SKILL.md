@@ -70,7 +70,14 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 
    **If `pages` is not installed**, the skill still delivers in full: report the absolute path of the generated file to the user, and hand it over by whatever channel is in use (file upload, attachment, or any static file server). Do not treat a missing `pages` component as a failure, and do not install it as a side effect — say the file is ready and where it is.
 
-7. **Verify the result**: if registered, fetch the internal URL and confirm the page renders; if a share link was explicitly requested, fetch that too (expect HTTP 200 with page content); if delivered as a file, open it and confirm it renders standalone. Either way, run the 常见失误清单 from methodology.md (dark theme, mobile width, sensitive info, link validity, version sync).
+7. **Verify the result.** Verify the artifact and the registration separately — and do not verify a registered page over HTTP.
+
+   - **The artifact**: open the generated HTML file directly and confirm it renders standalone. The page is self-contained, so this is the authoritative check; it needs no server.
+   - **The registration**: `pages list` and look for the URI. Note that `--q` matches the **title**, not the URI — a page with a Chinese title will not be found by searching its English URI. When in doubt, list everything and filter on the URI yourself.
+   - **A registered (unshared) page over HTTP**: the correct healthy response is **`302` redirecting to `/pages/login`** — *not* `200`. It is password-protected, and the agent has no session. **Do not follow redirects to check this.** `curl -L` (and any client that follows redirects by default) lands on the login page, which itself returns `200` with a full HTML body — so "HTTP 200" here means either you sent credentials or you are looking at the login form, and neither proves the page registered correctly. Getting `404` instead means registration failed.
+   - **A share link** (only if one was explicitly requested): `200` with the actual page content *is* the right check, because that route deliberately bypasses authentication. Confirm the body is your page and not a login form.
+
+   Then run the 常见失误清单 from methodology.md (dark theme, mobile width, sensitive info, link validity, version sync).
 
 8. **Record the source→page pairing.** When the source doc is later updated, the visual page must be updated in the same pass — note the mapping wherever the source doc's lifecycle is tracked.
 
