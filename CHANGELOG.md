@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0] — 2026-09-01
+
+### Added
+
+- **Archify diagram toolchain via pinned release + checksum lock** (upstream tt-a1i/archify, MIT, security-reviewed). `vendor/archify.lock.json` pins release `v2.16.0` and the sha256 of its `archify.zip` asset; `hooks/ensure-archify.mjs` (post-install / post-upgrade) downloads the asset, refuses anything whose hash differs from the lock (the hash — not the tag — anchors the reviewed content), and extracts it to `vendor/archify/` inside the skill directory. Idempotent; download failure is soft (doccraft stays fully usable, diagrams fall back to HTML/CSS + hand SVG, retried next install/upgrade). Provenance, review findings, and the upgrade procedure live in `vendor/VENDOR.md`. Archify compiles a small typed JSON description into validated, polished architecture / workflow / sequence / dataflow / lifecycle diagrams.
+- `scripts/export-archify-svg.mjs` — headless export of a dual-theme, self-contained SVG (~55KB) from an archify output page, for inlining into doccraft documents.
+- `references/diagrams-archify.md` — diagram routing and recipes: static SVG inline (default), `<iframe srcdoc>` full interactive viewer for 1–2 centerpiece diagrams per document, HTML/CSS or hand SVG for quick sketches. Diagram JSON sources live next to the document and are the editable source of truth.
+
+### Changed
+
+- SKILL.md step 5 diagram guidance now routes by diagram role (presentation-grade → archify; explorable centerpiece → iframe viewer; quick sketch → HTML/CSS boxes) instead of defaulting to hand-built SVG.
+
+
 ## [0.2.4] — 2026-07-25
 
 ### Security

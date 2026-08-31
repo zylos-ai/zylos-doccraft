@@ -1,0 +1,8 @@
+{
+  "name": "archify",
+  "upstream": "https://github.com/tt-a1i/archify",
+  "tag": "v2.16.0",
+  "asset": "archify.zip",
+  "sha256": "4c59fa6557a2385beaaef8c7219cc414573acc9f0c30a932d5053b0b20689a46",
+  "note": "Security-reviewed 2026-08-31 (see vendor/VENDOR.md). Update only via the procedure in VENDOR.md."
+}
