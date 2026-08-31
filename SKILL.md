@@ -13,6 +13,9 @@ type: utility
 
 lifecycle:
   npm: false
+  hooks:
+    post-install: hooks/ensure-archify.mjs
+    post-upgrade: hooks/ensure-archify.mjs
 
 upgrade:
   repo: zylos-ai/zylos-doccraft
@@ -48,7 +51,10 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 
 5. **Build the page.** Rules that override convenience:
    - Progressive disclosure never drops content — collapsed ≠ cut.
-   - Diagrams: HTML/CSS boxes first, simple inline SVG second (colors via CSS custom-property tokens so both themes work).
+   - Diagrams — route by role (full recipes in `references/diagrams-archify.md`):
+     - **Presentation-grade** (architecture, sequence, data-flow, lifecycle — anything a reader studies): author with the archify toolchain (`vendor/archify/`, fetched by the install hook — if absent, run `hooks/ensure-archify.mjs` once), export a dual-theme self-contained SVG, inline it. Keep the diagram's JSON source next to the document so later edits regenerate instead of hand-patching SVG.
+     - **A centerpiece the reader should explore** (pan/zoom, route tracing — at most 1–2 per document): embed the full archify viewer via `<iframe srcdoc>` (~700KB each).
+     - **Quick structural sketches**: HTML/CSS boxes or simple inline SVG (colors via CSS custom-property tokens so both themes work); mermaid-style hand SVG only when archify's five types don't fit.
    - Sensitive-info scan before publishing: no internal IPs/domains (100.64.*, 192.168.*, 内网 hostnames), chat IDs, platform IDs (ou_/oc_/cli_), credentials. A share link is a password-free public URL (step 6) — scan on that assumption.
    - Footer must state which source version the page is synced to and link the verbatim source.
 
