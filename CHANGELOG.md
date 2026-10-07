@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Opt-in reviewable-document workflow for implementation plans, execution plans, and code-review guides, backed by the Apache-2.0 `html-plan` runtime pinned at commit `f60f0454df3045f724c43c6346ec80bdcc3472b2`.
+- Doccraft-owned profile contracts, representative examples, and `scripts/pack-reviewable.mjs`, which adds profile, structure, remote-resource, and sensitive-content checks before the upstream packer runs.
+- Automated positive and reject-path tests plus desktop/mobile Chromium validation for all three profiles and structured Markdown responses.
+- Executable vendor-lock verification and a review-first upstream comparison/update procedure in `vendor/html-plan.UPSTREAM.md`.
+
+### Changed
+
+- `SKILL.md` routes matching requests into the reviewable workflow while preserving the existing general-document workflow as the default.
+
 ## [0.3.0] — 2026-09-01
 
 ### Added
