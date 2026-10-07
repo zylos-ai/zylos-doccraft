@@ -67,6 +67,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
+  html, body { max-width: 100%; overflow-x: clip; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body {
     background: var(--bg); color: var(--ink);
@@ -271,7 +272,10 @@
   </details>
 </section>
 
-<!-- 更多组件按需取用：.tablewrap 表格 / .phases 时间线 / .qboard 决策面板 / .dmz 双区对照 / .layers 层级条 / 内嵌 SVG -->
+<!-- 更多组件按需取用：.tablewrap 表格 / .phases 时间线 / .qboard 决策面板 / .dmz 双区对照 / .layers 层级条。
+     架构/数据流、跨系统时序、状态/生命周期图分别使用 doc-flow、doc-seq、doc-machine。
+     写作时链接本地 vendor/html-plan/runtime/{htmlplan.css,htmlplan.js}，交付前运行 scripts/pack-diagrams.mjs 内联运行时。
+     完整中文模板见 examples/diagrams/chinese-diagrams.html；复杂时序图只能在 figure 内横向滚动。 -->
 
 <footer>
   <ul>

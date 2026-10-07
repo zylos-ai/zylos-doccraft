@@ -12,12 +12,6 @@ description: >-
   interactive implementation plan, execution plan, or code-review guide.
 type: utility
 
-lifecycle:
-  npm: false
-  hooks:
-    post-install: hooks/ensure-archify.mjs
-    post-upgrade: hooks/ensure-archify.mjs
-
 upgrade:
   repo: zylos-ai/zylos-doccraft
   branch: main
@@ -61,10 +55,12 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 
 5. **Build the page.** Rules that override convenience:
    - Progressive disclosure never drops content — collapsed ≠ cut.
-   - Diagrams — route by role (full recipes in `references/diagrams-archify.md`):
-     - **Presentation-grade** (architecture, sequence, data-flow, lifecycle — anything a reader studies): author with the archify toolchain (`vendor/archify/`, fetched by the install hook — if absent, run `hooks/ensure-archify.mjs` once), export a dual-theme self-contained SVG, inline it. Keep the diagram's JSON source next to the document so later edits regenerate instead of hand-patching SVG.
-     - **A centerpiece the reader should explore** (pan/zoom, route tracing — at most 1–2 per document): embed the full archify viewer via `<iframe srcdoc>` (~700KB each).
-     - **Quick structural sketches**: HTML/CSS boxes or simple inline SVG (colors via CSS custom-property tokens so both themes work); mermaid-style hand SVG only when archify's five types don't fit.
+   - Diagrams — route by reader question (full recipes in `references/diagrams-html-plan.md`):
+     - **Architecture or data flow**: use the pinned html-plan `<doc-flow>` block. Keep the source as readable text inside the page; do not hand-draw connector SVG.
+     - **Cross-system order**: use `<doc-seq>`. A complex sequence may scroll inside its figure, but the page itself must never scroll horizontally.
+     - **State or lifecycle**: use `<doc-machine>`. Include the initial state, reachable final/stop states, and failure or cancellation transitions.
+     - **Small non-relational summaries**: use ordinary cards, tables, or phases. Do not turn every list into a diagram.
+     - Link the local html-plan CSS and JS while authoring, then run `node <doccraft-dir>/scripts/pack-diagrams.mjs <page.html>` so the runtime is inlined and remote resources or malformed diagram blocks stop delivery.
    - Sensitive-info scan before publishing: no internal IPs/domains (100.64.*, 192.168.*, 内网 hostnames), chat IDs, platform IDs (ou_/oc_/cli_), credentials. A share link is a password-free public URL (step 6) — scan on that assumption.
    - Footer must state which source version the page is synced to and link the verbatim source.
 
@@ -100,7 +96,7 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 ## Reviewable Document Workflow
 
 1. Read the source material and repository evidence in full. Record exact revisions, paths, lines, unresolved decisions, failure paths, and scope exclusions.
-2. Read `references/reviewable-document.md`, the selected profile, and `vendor/html-plan/references/blocks.md`. Treat the vendored `SKILL.md` as upstream protocol reference, not as Doccraft's top-level workflow.
+2. Read `references/reviewable-document.md`, the selected profile, `references/diagrams-html-plan.md` when the page needs a diagram, and `vendor/html-plan/references/blocks.md`. Treat the vendored `SKILL.md` as upstream protocol reference, not as Doccraft's top-level workflow.
 3. Write the page using the vendored review runtime. Add `<meta name="doccraft-profile" content="PROFILE">`, link `htmlplan.css` and `htmlplan.js` while authoring, then run the Doccraft validator and packer wrapper:
    ```bash
    node <doccraft-dir>/scripts/pack-reviewable.mjs <page.html> --profile <profile> --root <repo>
@@ -129,8 +125,11 @@ A doccraft page must satisfy all of the following:
 |---|---|
 | `references/methodology.md` | Info organization, visual principles, component decision table, pre-publish checklist |
 | `references/reviewable-document.md` | Shared claim, exhibit, decision, comment, and response protocol |
+| `references/diagrams-html-plan.md` | Architecture/data-flow, sequence, and lifecycle diagram routing and Chinese authoring rules |
 | `references/profiles/implementation-plan.md` | Pre-build behavior and design review contract |
 | `references/profiles/execution-plan.md` | Sequenced execution and operational gate review contract |
 | `references/profiles/code-review-guide.md` | Exact-revision code review and verification contract |
 | `assets/template.html` | Starting-point HTML with dual-theme CSS tokens and all component examples |
+| `examples/diagrams/chinese-diagrams.html` | Runnable Chinese examples for all three native diagram types |
+| `scripts/pack-diagrams.mjs` | Diagram safety/structure gate and self-contained html-plan packer wrapper |
 | `vendor/html-plan/` | Pinned Apache-2.0 review runtime and upstream authoring reference |

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>订单处理图表示例</title>
+  <link rel="stylesheet" href="../../vendor/html-plan/runtime/htmlplan.css">
+  <script src="../../vendor/html-plan/runtime/htmlplan.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>订单处理图表示例</h1>
+  <p class="dek">同一业务语义分别用架构/数据流、跨系统时序和状态生命周期表达。</p>
+
+  <h2>架构与数据流</h2>
+  <doc-flow caption="订单先校验，再写入账本；失败不会进入队列。">
+    <script type="text/plain">
+api = 接单接口 / POST /orders
+check = 规则校验 [amber]
+db = 订单账本 [db]
+queue = 履约队列 [green]
+| api | check | db |
+| .   | .     | queue |
+api -> check : 提交
+check -> db : 通过
+db -> queue : 入队
+check --> api : 拒绝原因
+    </script>
+  </doc-flow>
+
+  <h2>跨系统时序</h2>
+  <doc-seq caption="校验失败会直接返回，不会调用履约服务。">
+    <script type="text/plain">
+用户 -> 接单接口 : 提交订单
+接单接口 -> 规则服务 : 校验订单
+规则服务 --> 接单接口 : 校验通过
+接单接口 -> 库存服务 : 预占库存
+库存服务 --> 接单接口 : 预占成功
+接单接口 -> 支付服务 : 创建支付单
+支付服务 --> 接单接口 : 支付单已创建
+接单接口 -> 履约服务 : 创建履约任务
+履约服务 -> 通知服务 : 发送受理通知
+通知服务 --> 履约服务 : 通知已接收
+履约服务 --> 接单接口 : 任务已创建
+接单接口 --> 用户 : 返回订单号
+规则服务 -x-> 接单接口 : 校验失败
+接单接口 --> 用户 : 返回拒绝原因
+    </script>
+  </doc-seq>
+
+  <h2>状态与生命周期</h2>
+  <doc-machine name="order" caption="失败和取消都是可观察的终止状态。">
+    <script type="text/plain">
+machine order initial draft
+state draft # 草稿等待提交。
+state checking # 系统正在校验。
+state accepted final # 订单已受理。
+state rejected final # 订单被拒绝。
+state cancelled final # 用户已取消。
+| draft | checking | accepted |
+| cancelled | rejected | . |
+draft -submit-> checking : 提交
+checking -ok-> accepted : 通过
+checking -fail-> rejected : 拒绝
+draft -cancel-> cancelled : 取消
+    </script>
+  </doc-machine>
+</main>
+</body>
+</html>
