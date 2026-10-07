@@ -16,6 +16,10 @@
   "engines": {
     "node": ">=20"
   },
+  "scripts": {
+    "test": "node --test tests/reviewable-validation.test.mjs tests/vendor-lock.test.mjs && node tests/reviewable-browser.mjs",
+    "vendor:check": "node scripts/check-html-plan-vendor.mjs"
+  },
   "zylos": {
     "type": "skill",
     "displayName": "Doccraft",

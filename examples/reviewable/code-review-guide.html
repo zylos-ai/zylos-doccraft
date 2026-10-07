@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doccraft-profile" content="code-review-guide">
+  <meta name="doccraft-base" content="70cb98ac6ab2843dc82903bbf4049c1cfbe9bf64">
+  <meta name="doccraft-head" content="e4a65a1">
+  <title>Profile Integration Review</title>
+  <link rel="stylesheet" href="vendor/html-plan/runtime/htmlplan.css">
+  <script src="vendor/html-plan/runtime/htmlplan.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>Profile Integration Review</h1>
+  <div class="tldr">The change adds opt-in review profiles while keeping general Doccraft behavior unchanged.</div>
+  <p>Base <code>70cb98ac</code>; head <code>e4a65a1</code>; risk is medium.</p>
+  <doc-plan open="1">
+    <doc-claim id="delta">
+      <p>Reviewable mode is explicit and leaves general mode unchanged.</p>
+      <doc-calls caption="Only reviewable requests enter the new reference chain." files>
+        <script type="text/plain">
+~ Doccraft mode selection                    @ SKILL.md:28
++   reviewable-document core                 @ references/reviewable-document.md:1
++     implementation profile                 @ references/profiles/implementation-plan.md:1
+        </script>
+      </doc-calls>
+    </doc-claim>
+    <doc-claim id="risk" at="SKILL.md:28">
+      <p>The high-risk routing rule remains narrow.</p>
+      <doc-code src="SKILL.md" lines="28-36" hl="32-34"></doc-code>
+    </doc-claim>
+    <doc-claim id="verification">
+      <p>Positive and reject paths have reproducible evidence.</p>
+      <doc-tree caption="The suite covers artifacts, policy rejection, and browser behavior.">
+        <script type="text/plain">
+tests/
+  + reviewable-validation.test.mjs # positive and reject paths
+  + reviewable-browser.mjs         # response and viewport checks
+        </script>
+      </doc-tree>
+      <table data-review-verification>
+        <thead><tr><th>Path</th><th>Evidence</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Valid profiles</td><td>Three local fixtures</td><td>Reproduced</td></tr>
+          <tr><td>Remote asset</td><td>Wrapper rejection</td><td>Reproduced</td></tr>
+          <tr><td>Invalid hierarchy</td><td>Wrapper rejection</td><td>Reproduced</td></tr>
+        </tbody>
+      </table>
+    </doc-claim>
+    <doc-claim id="failure">
+      <p>A failed check blocks the package and review recommendation.</p>
+      <doc-ask id="residual-risk" neutral>
+        <p>Does the known residual risk block review?</p>
+        <label><input type="radio" name="risk" value="block"> Block</label>
+        <label><input type="radio" name="risk" value="follow-up" checked> Track as follow-up</label>
+      </doc-ask>
+    </doc-claim>
+    <doc-claim aux="scope" id="scope">
+      <p>The guide does not merge, publish, deploy, or accept the change.</p>
+    </doc-claim>
+  </doc-plan>
+</main>
+</body>
+</html>

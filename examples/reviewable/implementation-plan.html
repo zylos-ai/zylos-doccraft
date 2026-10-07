@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doccraft-profile" content="implementation-plan">
+  <title>Reviewable Validator</title>
+  <link rel="stylesheet" href="vendor/html-plan/runtime/htmlplan.css">
+  <script src="vendor/html-plan/runtime/htmlplan.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>Reviewable Validator</h1>
+  <div class="tldr">A Doccraft-owned gate rejects unsafe review pages before the pinned packer runs.</div>
+  <doc-plan open="1">
+    <doc-claim id="behavior">
+      <p>Authors can package a safe review page.</p>
+      <doc-mock frame="terminal" w="460" label="Validation result">
+        <template><pre data-ref="result">doccraft: validation passed
+upstream pack: clean</pre></template>
+        <doc-pin ref="result" title="Observable result">Both gates finish before output is written.</doc-pin>
+      </doc-mock>
+      <doc-claim id="validator-location" at="scripts/pack-reviewable.mjs:1">
+        <p>The wrapper owns Doccraft policy checks.</p>
+        <doc-code title="pack-reviewable.mjs · sketch" lang="js">
+          <script type="text/plain">
+const errors = validateDoccraftPolicy(source, profile)
+if (errors.length) process.exit(1)
+runPinnedPacker(source)
+          </script>
+        </doc-code>
+      </doc-claim>
+    </doc-claim>
+    <doc-claim id="surface">
+      <p>The wrapper delegates valid input to the pinned runtime.</p>
+      <doc-calls caption="The wrapper adds policy checks without modifying vendor code." files>
+        <script type="text/plain">
++ **pack-reviewable**()                    @ scripts/pack-reviewable.mjs:1
++   validate profile and safety            @ scripts/pack-reviewable.mjs:31
+    pack.mjs                                @ vendor/html-plan/runtime/pack.mjs:1
+        </script>
+      </doc-calls>
+    </doc-claim>
+    <doc-claim id="reject">
+      <p>Unsafe or invalid input stops before packaging.</p>
+      <doc-ask id="validation-choice">
+        <p>Which validation policy should the wrapper use?</p>
+        <label><input type="radio" name="validation" value="balanced" checked> Balanced</label>
+        <label><input type="radio" name="validation" value="strict"> Strict reject path</label>
+      </doc-ask>
+    </doc-claim>
+    <doc-claim aux="scope" id="scope">
+      <p>The change leaves the vendored runtime and general mode unchanged.</p>
+    </doc-claim>
+  </doc-plan>
+</main>
+</body>
+</html>
