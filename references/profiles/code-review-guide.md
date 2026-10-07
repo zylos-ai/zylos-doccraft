@@ -8,11 +8,11 @@ What changed, why is it correct, where can it fail, and what evidence lets the r
 
 ## Required Shape
 
-- Name the exact base and head revisions near the title. If either is unknown, mark the comparison unverified.
+- Name the exact base and head revisions near the title and in `doccraft-base` / `doccraft-head` meta tags. If either is unknown, mark the comparison unverified and do not package it as a completed guide.
 - Start with the behavioral delta and risk level, not a file list.
 - Use `doc-calls` for changed entrypoints and propagation, `doc-code` for high-risk lines, `doc-schema` for contract changes, and `doc-machine` for lifecycle changes.
 - Group files by behavior or risk. Do not reproduce the repository diff as the information architecture.
-- End with a verification matrix and explicit out-of-scope items.
+- End with a `<table data-review-verification>` verification matrix and explicit out-of-scope items.
 
 ## Required Checks
 

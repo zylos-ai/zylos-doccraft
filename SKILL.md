@@ -101,9 +101,9 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 
 1. Read the source material and repository evidence in full. Record exact revisions, paths, lines, unresolved decisions, failure paths, and scope exclusions.
 2. Read `references/reviewable-document.md`, the selected profile, and `vendor/html-plan/references/blocks.md`. Treat the vendored `SKILL.md` as upstream protocol reference, not as Doccraft's top-level workflow.
-3. Write the page using the vendored review runtime. Link `htmlplan.css` and `htmlplan.js` while authoring, then run:
+3. Write the page using the vendored review runtime. Add `<meta name="doccraft-profile" content="PROFILE">`, link `htmlplan.css` and `htmlplan.js` while authoring, then run the Doccraft validator and packer wrapper:
    ```bash
-   node <doccraft-dir>/vendor/html-plan/runtime/pack.mjs <page.html> --root <repo>
+   node <doccraft-dir>/scripts/pack-reviewable.mjs <page.html> --profile <profile> --root <repo>
    ```
    Add one `--root` for each checkout whose files the document cites. The packed output is the deliverable.
 4. Apply the chosen profile's required claims and exhibits. Keep evidence next to the claim it supports. Put a decision on the claim it changes.

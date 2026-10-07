@@ -16,6 +16,9 @@
   "engines": {
     "node": ">=20"
   },
+  "scripts": {
+    "test": "node --test tests/reviewable-validation.test.mjs && node tests/reviewable-browser.mjs"
+  },
   "zylos": {
     "type": "skill",
     "displayName": "Doccraft",

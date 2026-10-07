@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doccraft-profile" content="execution-plan">
+  <title>Review Gate Rollout</title>
+  <link rel="stylesheet" href="vendor/html-plan/runtime/htmlplan.css">
+  <script src="vendor/html-plan/runtime/htmlplan.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>Review Gate Rollout</h1>
+  <div class="tldr">Validation runs before packaging; any failed gate stops without an output artifact.</div>
+  <doc-plan open="1">
+    <doc-claim id="order">
+      <p>Each artifact passes gates in a fixed order.</p>
+      <doc-seq caption="A failure returns to the author without invoking later stages.">
+        <script type="text/plain">
+Author -> Doccraft : submit source
+Doccraft -> Doccraft : validate profile
+Doccraft --> Author : reject invalid input
+Doccraft -> Packer : package valid input
+Packer --> Author : packed artifact
+        </script>
+      </doc-seq>
+    </doc-claim>
+    <doc-claim id="gates">
+      <p>Every stage has observable completion evidence.</p>
+      <doc-tree caption="Inputs, owners, dependencies, evidence, and next gates stay together.">
+        <script type="text/plain">
+validation/
+  input.html       # input · author
+  profile          # dependency · Doccraft
+  lint report      # completion evidence
+  packed.html      # next gate
+        </script>
+      </doc-tree>
+    </doc-claim>
+    <doc-claim aux="containment" id="containment">
+      <p>A failed gate stops packaging and preserves the source.</p>
+      <doc-machine name="packaging" caption="Only the valid state can write an artifact.">
+        <script type="text/plain">
+machine packaging initial source
+state source       # The authoring source is unchanged.
+state validating   # Doccraft checks policy.
+state packed final # The output is self-contained.
+state stopped final # The error is reported.
+source -check-> validating : validate
+validating -ok-> packed : write
+validating -fail-> stopped : stop
+        </script>
+      </doc-machine>
+    </doc-claim>
+    <doc-claim aux="scope" id="scope">
+      <p>The rollout does not publish, deploy, restart, or delete anything.</p>
+    </doc-claim>
+  </doc-plan>
+</main>
+</body>
+</html>

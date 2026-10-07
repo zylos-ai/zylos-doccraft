@@ -35,7 +35,8 @@ The closed page is the summary. A reader must understand the proposed outcome fr
 ## Packaging Rules
 
 - Use only local assets. Doccraft forbids remote scripts, styles, fonts, images, video, and other `http(s)` dependencies even though the upstream packer can leave remote media unchanged.
-- Run the vendored packer and deliver the packed file, not the authoring source.
+- Declare the selected profile with `<meta name="doccraft-profile" content="PROFILE">`.
+- Run `scripts/pack-reviewable.mjs` with the same profile. It applies Doccraft safety and profile checks, then invokes the vendored packer. Deliver the packed file, not the authoring source.
 - Preserve the vendored runtime unchanged. Put Doccraft adaptations in this directory or the selected profile.
 - Keep sensitive source content out of the page. The packer blocks common secret paths and patterns, but that is a guardrail, not a complete data-classification system.
 

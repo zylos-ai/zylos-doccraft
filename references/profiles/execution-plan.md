@@ -12,7 +12,7 @@ What happens in what order, what must be true before each stage starts, and how 
 - Use `doc-seq` for cross-system order, `doc-machine` for lifecycle and stop states, and `doc-tree` or `doc-calls` for the touched surface.
 - For every stage, state its inputs, owner, dependency, completion evidence, and next gate.
 - Show the critical path and which work can run in parallel.
-- End with an explicit rollback/containment claim and a scope claim.
+- End with a top-level `aux="rollback"` or `aux="containment"` claim and an `aux="scope"` claim.
 
 ## Required Checks
 
