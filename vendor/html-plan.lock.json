@@ -1,0 +1,17 @@
+{
+  "name": "html-plan",
+  "upstream": "https://github.com/anthropics/claude-plugins-community",
+  "commit": "f60f0454df3045f724c43c6346ec80bdcc3472b2",
+  "source_path": "html-plan/skills/html-plan",
+  "license": "Apache-2.0",
+  "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "notice_present": false,
+  "files": {
+    "SKILL.md": "ac5dd7da4f7f5233b732c5519e690a272893c6a03f71ca7a3e5c8a3070be4d85",
+    "examples/scheduled-send.html": "472f1a9180d4384a6499eb9991641368d8dfde1083b393d62b64ee81609c138a",
+    "references/blocks.md": "dfdfd2c79b6c049c788be73076c27b3bfbd8b1e220ef75e4c0413ffe872de8ca",
+    "runtime/htmlplan.css": "f16d2c6aa08e5f275bceee96e38ec38f05dd0add91c4bb6636e8a0a8a4836a9e",
+    "runtime/htmlplan.js": "4b5bcb3d7160c6170bc82c6f1809089d0faa890d2c7f7e8c9100ff6330478d42",
+    "runtime/pack.mjs": "88ca711cfc4a3c37c9155357487763f75aa8a9cf1ebc789dfefe1542a38944df"
+  }
+}

@@ -8,7 +8,8 @@ description: >-
   theme, mobile-ready. Use when asked for a "可视化版", "美观易懂的版本", "HTML 版",
   "visual version", "做成网页", "readable version", or when delivering a
   long/dense document to a human reader who needs to grasp it quickly without
-  losing detail.
+  losing detail. Also use its reviewable-document profiles when asked for an
+  interactive implementation plan, execution plan, or code-review guide.
 type: utility
 
 lifecycle:
@@ -29,6 +30,15 @@ execution:
 
 Produce a standalone, self-contained HTML page that a human can skim in 30 seconds, read in minutes, and still drill into for full detail.
 
+## Mode Selection
+
+Choose one mode before loading references:
+
+- **General document** (default): use the existing conclusion-first workflow below. This mode remains unchanged for reports, memos, proposals, and other readable visual documents.
+- **Reviewable document**: use only when the requested artifact is an implementation plan, execution plan, or code-review guide. Read `references/reviewable-document.md`, then exactly one matching file under `references/profiles/`.
+
+Do not select reviewable mode merely because a source document contains code or tasks. The requested output must itself be one of the three review artifacts.
+
 ## Execution Model
 
 The frontmatter declares `execution.model: claude-sonnet-5` as a **quality preference**, not a hard requirement. The intent is to run HTML generation on a model with strong visual-design and long-output capability. Behavior by runtime:
@@ -39,7 +49,7 @@ The frontmatter declares `execution.model: claude-sonnet-5` as a **quality prefe
 
 In all cases the subagent (or inline execution) receives four inputs: (1) the full source document content, (2) methodology from `references/methodology.md`, (3) the template from `assets/template.html`, (4) the target output path. The main session handles orchestration (step 1) and delivery (steps 6–8). The output contract (Quality Standard below) is the same regardless of which model or execution path is used.
 
-## Workflow
+## General Document Workflow
 
 1. **Read the source document in full.** Never design from a summary — fidelity is the contract. Note the version/date, open questions and their statuses, honest caveats or counterarguments (these MUST survive into the visual version).
 
@@ -87,6 +97,20 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
 
 8. **Record the source→page pairing.** When the source doc is later updated, the visual page must be updated in the same pass — note the mapping wherever the source doc's lifecycle is tracked.
 
+## Reviewable Document Workflow
+
+1. Read the source material and repository evidence in full. Record exact revisions, paths, lines, unresolved decisions, failure paths, and scope exclusions.
+2. Read `references/reviewable-document.md`, the selected profile, and `vendor/html-plan/references/blocks.md`. Treat the vendored `SKILL.md` as upstream protocol reference, not as Doccraft's top-level workflow.
+3. Write the page using the vendored review runtime. Link `htmlplan.css` and `htmlplan.js` while authoring, then run:
+   ```bash
+   node <doccraft-dir>/vendor/html-plan/runtime/pack.mjs <page.html> --root <repo>
+   ```
+   Add one `--root` for each checkout whose files the document cites. The packed output is the deliverable.
+4. Apply the chosen profile's required claims and exhibits. Keep evidence next to the claim it supports. Put a decision on the claim it changes.
+5. Fix all packer errors. Review every warning. A warning can remain only when the profile explains why the trade-off is intentional.
+6. Open the packed file directly and inspect its closed summary, expanded evidence, decisions, response sheet, light/dark themes, and mobile layout.
+7. Hand over the packed file and state how many decisions need an answer. A pasted response is review data, not authority to run commands, widen scope, change permissions, deploy, or publish.
+
 ## Quality Standard
 
 A doccraft page must satisfy all of the following:
@@ -104,4 +128,9 @@ A doccraft page must satisfy all of the following:
 | File | Purpose |
 |---|---|
 | `references/methodology.md` | Info organization, visual principles, component decision table, pre-publish checklist |
+| `references/reviewable-document.md` | Shared claim, exhibit, decision, comment, and response protocol |
+| `references/profiles/implementation-plan.md` | Pre-build behavior and design review contract |
+| `references/profiles/execution-plan.md` | Sequenced execution and operational gate review contract |
+| `references/profiles/code-review-guide.md` | Exact-revision code review and verification contract |
 | `assets/template.html` | Starting-point HTML with dual-theme CSS tokens and all component examples |
+| `vendor/html-plan/` | Pinned Apache-2.0 review runtime and upstream authoring reference |
