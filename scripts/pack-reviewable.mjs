@@ -115,6 +115,9 @@ for (const node of all) {
 }
 
 const has = (tag) => new RegExp(`<${tag}\\b`, 'i').test(html);
+const tagged = (tag, predicate) => [...treeSource.matchAll(new RegExp(`<${tag}\\b([^>]*)>`, 'gi'))]
+  .filter((match) => predicate(attrs(match[1])));
+const marked = (name, value) => tagged('[a-z][\\w:-]*', (attributes) => name in attributes && (value === undefined || attributes[name] === value));
 const text = strip(html).toLowerCase();
 if (!/(reject|error|fail|cancel|rollback|refus|invalid|denied|stop)/.test(text)) fail('no reject, error, cancellation, rollback, refusal, invalid, denied, or stop path is visible');
 
@@ -122,6 +125,12 @@ if (profile === 'implementation-plan') {
   if (!has('doc-calls')) fail('implementation-plan requires a <doc-calls> change-surface exhibit');
   if (!has('doc-code') && !has('doc-schema')) fail('implementation-plan requires a <doc-code> or <doc-schema> location/contract exhibit');
   if (!has('doc-mock') && !has('doc-machine')) fail('implementation-plan requires a <doc-mock> or <doc-machine> behavior exhibit');
+  const doubtfulPremises = marked('data-review-premise', 'doubtful').length;
+  const authoritativeQuotes = tagged('doc-quote', (attributes) => 'data-review-authoritative-quote' in attributes).length;
+  if (authoritativeQuotes < doubtfulPremises) fail('each data-review-premise="doubtful" marker requires a <doc-quote data-review-authoritative-quote>');
+  const contractAlternatives = marked('data-review-alternative', 'contract').length;
+  const preferenceConditions = marked('data-review-preferable-when').length;
+  if (preferenceConditions < contractAlternatives) fail('each data-review-alternative="contract" marker requires a data-review-preferable-when field');
 }
 if (profile === 'execution-plan') {
   if (!has('doc-seq')) fail('execution-plan requires a <doc-seq> ordering exhibit');

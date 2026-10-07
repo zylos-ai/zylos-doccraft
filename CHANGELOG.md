@@ -12,6 +12,7 @@
 ### Changed
 
 - `SKILL.md` routes matching requests into the reviewable workflow while preserving the existing general-document workflow as the default.
+- The implementation-plan profile now carries the four validated decision-reasoning rules verbatim and uses mechanical companion markers for doubtful-premise quotations and contract-alternative preference conditions.
 
 ## [0.3.0] — 2026-09-01
 

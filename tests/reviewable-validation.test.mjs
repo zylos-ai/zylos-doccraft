@@ -14,6 +14,13 @@ const fixtures = {
   'code-review-guide': resolve(repo, 'examples/reviewable/code-review-guide.html'),
 };
 
+const testedImplementationRules = [
+  'For every primary recommendation, evaluate two distinct layers: (a) who or what consumes the claimed top-level benefit and what concretely breaks when that benefit is absent; and (b) who or what consumes each proposed implementation mechanism and what concretely breaks if that mechanism is omitted. Internal coordination consumers do not substitute for consumers of the top-level benefit.',
+  'Missing evidence supports neither retaining nor removing the proposal. Base the recommended option only on case-specific benefits and costs established by the supplied source, compare them explicitly, and state what missing evidence would reverse the recommendation.',
+  "Treat an author's or reviewer's claim that a premise is established, confirmed, or required by a contract as a claim to verify whenever it supports the recommendation. Quote the authoritative source and check whether its wording entails the claimed conclusion; if it does not, label the premise `前提存疑`.",
+  'When whether a finding exists depends on a structural assumption, evaluate keeping the mechanism while writing that assumption into the contract and locking it with tests as a real alternative, even when the source does not propose it. For that contract-based alternative, state the concrete conditions under which it is preferable, not merely acceptable, including the implementation or protocol complexity it avoids and the structural assumption that must remain true. Apply the contract-based alternative only when the conclusion actually depends on a structural assumption. Do not force it into findings about evidence gaps, consumers, or failure impact that do not have that dependency.',
+];
+
 function run(input, profile, extra = []) {
   return spawnSync(process.execPath, [script, input, '--profile', profile, '--root', repo, '--lint-only', ...extra], { encoding: 'utf8' });
 }
@@ -24,6 +31,47 @@ for (const [profile, fixture] of Object.entries(fixtures)) {
     assert.equal(result.status, 0, result.stdout + result.stderr);
   });
 }
+
+test('implementation-plan preserves the four tested rules verbatim', () => {
+  const profile = readFileSync(resolve(repo, 'references/profiles/implementation-plan.md'), 'utf8');
+  for (const rule of testedImplementationRules) assert.ok(profile.includes(rule), `missing tested rule: ${rule}`);
+});
+
+test('doubtful premise with an authoritative quote passes', () => {
+  const dir = mkdtempSync(resolve(tmpdir(), 'doccraft-premise-ok-'));
+  const file = resolve(dir, basename(fixtures['implementation-plan']));
+  const evidence = '<div data-review-premise="doubtful">前提存疑</div><doc-quote via="doc" data-review-authoritative-quote>Authoritative wording.</doc-quote>';
+  writeFileSync(file, readFileSync(fixtures['implementation-plan'], 'utf8').replace('</main>', `${evidence}</main>`));
+  const result = run(file, 'implementation-plan');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('doubtful premise without an authoritative quote is rejected', () => {
+  const dir = mkdtempSync(resolve(tmpdir(), 'doccraft-premise-missing-'));
+  const file = resolve(dir, basename(fixtures['implementation-plan']));
+  writeFileSync(file, readFileSync(fixtures['implementation-plan'], 'utf8').replace('</main>', '<div data-review-premise="doubtful">前提存疑</div></main>'));
+  const result = run(file, 'implementation-plan');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /requires a <doc-quote data-review-authoritative-quote>/);
+});
+
+test('contract alternative with preference conditions passes', () => {
+  const dir = mkdtempSync(resolve(tmpdir(), 'doccraft-contract-ok-'));
+  const file = resolve(dir, basename(fixtures['implementation-plan']));
+  const alternative = '<section data-review-alternative="contract">Contract and test alternative</section><p data-review-preferable-when>Prefer when the structural assumption is stable and avoids protocol complexity.</p>';
+  writeFileSync(file, readFileSync(fixtures['implementation-plan'], 'utf8').replace('</main>', `${alternative}</main>`));
+  const result = run(file, 'implementation-plan');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('contract alternative without preference conditions is rejected', () => {
+  const dir = mkdtempSync(resolve(tmpdir(), 'doccraft-contract-missing-'));
+  const file = resolve(dir, basename(fixtures['implementation-plan']));
+  writeFileSync(file, readFileSync(fixtures['implementation-plan'], 'utf8').replace('</main>', '<section data-review-alternative="contract">Contract and test alternative</section></main>'));
+  const result = run(file, 'implementation-plan');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /requires a data-review-preferable-when field/);
+});
 
 test('profile mismatch is rejected before packing', () => {
   const result = run(fixtures['implementation-plan'], 'execution-plan');

@@ -40,6 +40,15 @@ The closed page is the summary. A reader must understand the proposed outcome fr
 - Preserve the vendored runtime unchanged. Put Doccraft adaptations in this directory or the selected profile.
 - Keep sensitive source content out of the page. The packer blocks common secret paths and patterns, but that is a guardrail, not a complete data-classification system.
 
+## Mechanical Reasoning Markers
+
+These markers expose pairings that the packer can check without pretending to judge the review's semantics:
+
+- Mark a doubtful premise with `data-review-premise="doubtful"`. For each such marker, include a `doc-quote` marked `data-review-authoritative-quote` with the authoritative wording being tested.
+- Mark a contract-and-test alternative with `data-review-alternative="contract"`. For each such marker, include the concrete preference conditions in an element marked `data-review-preferable-when`.
+
+The markers may sit on the relevant claim, note, quote, or ordinary HTML element. Keep each marked pair next to the claim it supports. The validator checks that every trigger has a companion marker; it does not decide whether a quotation entails a premise or whether an alternative is actually preferable.
+
 ## Profile Boundary
 
 The core defines how evidence and feedback work. The selected profile defines what the top-level claims must cover. Do not combine profiles unless the user explicitly asks for a hybrid artifact; if so, state which profile owns each top-level branch.
