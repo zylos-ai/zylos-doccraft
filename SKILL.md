@@ -60,7 +60,7 @@ In all cases the subagent (or inline execution) receives four inputs: (1) the fu
      - **Cross-system order**: use `<doc-seq>`. A complex sequence may scroll inside its figure, but the page itself must never scroll horizontally.
      - **State or lifecycle**: use `<doc-machine>`. Include the initial state, reachable final/stop states, and failure or cancellation transitions.
      - **Small non-relational summaries**: use ordinary cards, tables, or phases. Do not turn every list into a diagram.
-     - Link the local html-plan CSS and JS while authoring, then run `node <doccraft-dir>/scripts/pack-diagrams.mjs <page.html>` so the runtime is inlined and remote resources or malformed diagram blocks stop delivery.
+     - Link Doccraft's scoped `runtime/diagrams.css` and `runtime/diagrams.js` while authoring, then run `node <doccraft-dir>/scripts/pack-diagrams.mjs <page.html>` so the adapter is inlined and remote resources or malformed diagram blocks stop delivery. Do not load the full review runtime into an ordinary document.
    - Sensitive-info scan before publishing: no internal IPs/domains (100.64.*, 192.168.*, 内网 hostnames), chat IDs, platform IDs (ou_/oc_/cli_), credentials. A share link is a password-free public URL (step 6) — scan on that assumption.
    - Footer must state which source version the page is synced to and link the verbatim source.
 

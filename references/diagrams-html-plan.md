@@ -1,6 +1,6 @@
 # html-plan Diagram Guide
 
-Use the pinned html-plan runtime for diagrams that a reader must study. Keep the diagram source in the HTML so later edits change readable text rather than generated SVG paths.
+Use Doccraft's diagram-only adapter for diagrams that a reader must study. Its syntax and lint rules come from the pinned html-plan source, but its CSS and browser runtime are Doccraft-owned and limited to diagram containers. It does not load review comments, response controls, a table of contents, local storage, or page-wide styles. Keep the diagram source in the HTML so later edits change readable text rather than generated SVG paths.
 
 ## Choose the block by question
 
@@ -25,12 +25,12 @@ Use cards, a table, or `.phases` for a short list that has no important relation
 ```html
 <doc-flow caption="订单先校验，再写入账本；失败不会进入队列。">
   <script type="text/plain">
-api = 接单接口 / POST /orders
+api = 接单接口
 check = 规则校验 [amber]
 db = 订单账本 [db]
 queue = 履约队列 [green]
-| api | check | db |
-| .   | .     | queue |
+| api | check |
+| queue | db |
 api -> check : 提交
 check -> db : 通过
 db -> queue : 入队
@@ -85,11 +85,11 @@ Every state must be reachable from the initial state. Every dead end must be `fi
 
 ## Pack and verify
 
-While authoring, link the local pinned runtime:
+While authoring, link the local diagram-only adapter:
 
 ```html
-<link rel="stylesheet" href="../../vendor/html-plan/runtime/htmlplan.css">
-<script src="../../vendor/html-plan/runtime/htmlplan.js" defer></script>
+<link rel="stylesheet" href="../../runtime/diagrams.css">
+<script src="../../runtime/diagrams.js" defer></script>
 ```
 
 Then package the page:
@@ -98,4 +98,4 @@ Then package the page:
 node <doccraft-dir>/scripts/pack-diagrams.mjs page.html
 ```
 
-The wrapper rejects missing diagrams, empty or malformed diagram blocks, and remote dependencies before invoking the pinned packer. Deliver the packed file, then inspect it directly in desktop/mobile and light/dark modes. The page must have no horizontal overflow; a complex sequence may scroll only inside its figure.
+The wrapper rejects missing diagrams, empty or malformed diagram blocks, and remote dependencies, including protocol-relative URLs. It uses the pinned upstream parser/linter, then replaces the upstream page runtime with the scoped adapter in the packed file. Deliver the packed file, then inspect it directly in desktop/mobile and light/dark modes. The page must have no horizontal overflow; a complex sequence may scroll only inside its figure. Use `examples/diagrams/wide-sequence-stress.html` only as a mobile overflow test, not as the warning-free reference example.

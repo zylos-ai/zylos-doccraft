@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,11 +29,11 @@ const diagramTags = ['doc-flow', 'doc-seq', 'doc-machine'];
 let diagramCount = 0;
 
 const remoteChecks = [
-  [/<(?:script|img|video|audio|source|iframe|embed|doc-shot)\b[^>]*\bsrc\s*=\s*["']\s*https?:\/\//gi, 'remote src dependency'],
-  [/<link\b[^>]*\bhref\s*=\s*["']\s*https?:\/\//gi, 'remote link dependency'],
-  [/<object\b[^>]*\bdata\s*=\s*["']\s*https?:\/\//gi, 'remote object dependency'],
-  [/@import\s+(?:url\()?\s*["']?https?:\/\//gi, 'remote CSS import'],
-  [/url\(\s*["']?https?:\/\//gi, 'remote CSS asset'],
+  [/<(?:script|img|video|audio|source|iframe|embed|doc-shot)\b[^>]*\bsrc\s*=\s*["']\s*(?:https?:)?\/\//gi, 'remote src dependency'],
+  [/<link\b[^>]*\bhref\s*=\s*["']\s*(?:https?:)?\/\//gi, 'remote link dependency'],
+  [/<object\b[^>]*\bdata\s*=\s*["']\s*(?:https?:)?\/\//gi, 'remote object dependency'],
+  [/@import\s+(?:url\(\s*)?["']?\s*(?:https?:)?\/\//gi, 'remote CSS import'],
+  [/url\(\s*["']?\s*(?:https?:)?\/\//gi, 'remote CSS asset'],
 ];
 for (const [pattern, label] of remoteChecks) if (pattern.test(html)) fail(`${label} is forbidden; diagram pages must be self-contained`);
 
@@ -55,9 +56,54 @@ if (errors.length) {
   process.exit(1);
 }
 
-const result = spawnSync(process.execPath, [resolve(repo, 'vendor/html-plan/runtime/pack.mjs'), ...args], {
-  stdio: 'inherit',
-  env: process.env,
+const lintOnly = args.includes('--lint-only');
+const valueAfter = (name) => {
+  const index = args.indexOf(name);
+  return index >= 0 ? args[index + 1] : '';
+};
+const outputPath = resolve(valueAfter('-o') || valueAfter('--out') || inputPath.replace(/(\.src)?\.html?$/, '') + (inputPath.includes('.src.') ? '.html' : '.packed.html'));
+const temporary = mkdtempSync(resolve(tmpdir(), 'doccraft-diagram-pack-'));
+const lintSource = resolve(temporary, 'diagram-source.html');
+writeFileSync(lintSource, html
+  .replace(/(?:\.\.\/)*runtime\/diagrams\.css/g, 'htmlplan.css')
+  .replace(/(?:\.\.\/)*runtime\/diagrams\.js/g, 'htmlplan.js'));
+const upstreamArgs = args.filter((arg, index) => {
+  if (arg === input) return false;
+  if (['-o', '--out'].includes(arg)) return false;
+  if (index > 0 && ['-o', '--out'].includes(args[index - 1])) return false;
+  return true;
 });
-if (result.error) throw result.error;
-process.exit(result.status ?? 1);
+upstreamArgs.push('--root', dirname(inputPath));
+if (!lintOnly) upstreamArgs.push('--out', outputPath);
+const adapterCss = readFileSync(resolve(repo, 'runtime/diagrams.css'), 'utf8');
+const adapterJs = readFileSync(resolve(repo, 'runtime/diagrams.js'), 'utf8').replace(/<\/script/gi, '<\\/script');
+const replaceReviewRuntime = (path) => {
+  const packed = readFileSync(path, 'utf8')
+    .replace(/<style\s+data-htmlplan>[\s\S]*?<\/style>/i, `<style data-doccraft-diagrams>\n${adapterCss}\n</style>`)
+    .replace(/<script\s+data-htmlplan>[\s\S]*?<\/script>/i, `<script data-doccraft-diagrams>\n${adapterJs}\n</script>`)
+    .replace(/data-htmlplan-packed/g, 'data-doccraft-diagrams-packed');
+  writeFileSync(path, packed);
+};
+
+let exitStatus = null;
+try {
+  const result = spawnSync(process.execPath, [resolve(repo, 'vendor/html-plan/runtime/pack.mjs'), lintSource, ...upstreamArgs], {
+    encoding: 'utf8',
+    env: process.env,
+  });
+  process.stdout.write(result.stdout || '');
+  process.stderr.write(result.stderr || '');
+  if (result.error) throw result.error;
+  if (result.status !== 0 || lintOnly) {
+    exitStatus = result.status ?? 1;
+  } else {
+    replaceReviewRuntime(outputPath);
+    if (args.includes('--artifact')) {
+      const artifactPath = outputPath.replace(/(\.packed)?\.html?$/, '.artifact.html');
+      if (existsSync(artifactPath)) replaceReviewRuntime(artifactPath);
+    }
+  }
+} finally {
+  rmSync(temporary, { recursive: true, force: true });
+}
+if (exitStatus !== null) process.exit(exitStatus);

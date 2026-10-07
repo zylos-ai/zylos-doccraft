@@ -1,0 +1,87 @@
+/* Doccraft diagram adapter. Every rule is scoped to a diagram element. */
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] {
+  --dc-surface: var(--surface, #fff);
+  --dc-surface-muted: var(--surface2, #f1f3f2);
+  --dc-ink: var(--ink, #22252e);
+  --dc-ink-muted: var(--ink2, #5c6270);
+  --dc-line: var(--hairline, #dfe3e1);
+  --dc-accent: var(--accent, #0e7c72);
+  --dc-accent-soft: var(--accent-soft, #e0f0ee);
+  --dc-good: var(--settled, #2e7d46);
+  --dc-good-soft: var(--settled-soft, #e4f1e8);
+  --dc-warn: var(--converge, #a96f14);
+  --dc-warn-soft: var(--converge-soft, #f7eedc);
+  --dc-bad: var(--threat, #b3423a);
+  --dc-bad-soft: var(--threat-soft, #f7e7e5);
+  display: block;
+  max-width: 100%;
+  margin: 18px 0 24px;
+  color: var(--dc-ink);
+  font-family: inherit;
+}
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] > script { display: none; }
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] .dc-frame {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid var(--dc-line);
+  border-radius: 8px;
+  padding: 14px;
+  background-color: var(--dc-surface);
+  background-image: radial-gradient(var(--dc-line) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] .dc-frame > svg {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  max-width: none;
+}
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] .dc-caption {
+  margin-top: 8px;
+  color: var(--dc-ink-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] .dc-error {
+  white-space: pre-wrap;
+  border: 1px solid var(--dc-bad);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--dc-bad-soft);
+  color: var(--dc-bad);
+  font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg {
+  color: var(--dc-ink-muted);
+  font: 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+}
+
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg text { fill: var(--dc-ink); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-node { fill: var(--dc-surface); stroke: var(--dc-ink-muted); stroke-width: 1.3; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-node.accent,
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-state.initial { fill: var(--dc-accent-soft); stroke: var(--dc-accent); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-node.green { fill: var(--dc-good-soft); stroke: var(--dc-good); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-node.amber { fill: var(--dc-warn-soft); stroke: var(--dc-warn); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-node.red { fill: var(--dc-bad-soft); stroke: var(--dc-bad); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-edge { fill: none; stroke: var(--dc-ink-muted); stroke-width: 1.4; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-edge.dashed { stroke-dasharray: 5 4; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-edge.lost { stroke: var(--dc-bad); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-label-bg { fill: var(--dc-surface); stroke: var(--dc-line); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-sub { fill: var(--dc-ink-muted); font: 11px ui-monospace, "SF Mono", Menlo, monospace; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-actor { fill: var(--dc-ink); stroke: var(--dc-ink); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-actor-label { fill: var(--dc-surface); font-weight: 600; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-life { stroke: var(--dc-line); stroke-dasharray: 4 4; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-note { fill: var(--dc-warn-soft); stroke: var(--dc-warn); }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-state { fill: var(--dc-surface); stroke: var(--dc-ink-muted); stroke-width: 1.4; }
+:is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] svg .dc-state.final { stroke-width: 3; }
+
+@media (max-width: 720px) {
+  :is(doc-flow, doc-seq, doc-machine)[data-doccraft-diagram] .dc-frame { padding: 10px; }
+}

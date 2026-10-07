@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { existsSync, mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,16 @@ const require = createRequire(import.meta.url);
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const work = mkdtempSync(resolve(tmpdir(), 'doccraft-browser-'));
 const profiles = ['implementation-plan', 'execution-plan', 'code-review-guide'];
+
+function ordinaryTemplateSource() {
+  const fixture = readFileSync(resolve(repo, 'examples/diagrams/chinese-diagrams.html'), 'utf8');
+  const diagrams = fixture.match(/<doc-(?:flow|seq|machine)\b[\s\S]*?<\/doc-(?:flow|seq|machine)>/gi).join('\n');
+  return readFileSync(resolve(repo, 'assets/template.html'), 'utf8')
+    .replace('<title><!-- 文档标题 --></title>', '<title>普通文档图表回归</title>')
+    .replace('<h1><!-- 文档标题 --></h1>', '<h1>普通文档图表回归</h1>')
+    .replace('</head>', '<link rel="stylesheet" href="../runtime/diagrams.css"><script src="../runtime/diagrams.js" defer></script></head>')
+    .replace('<footer>', `${diagrams}\n<footer>`);
+}
 
 function resolvePlaywright() {
   const candidates = [
@@ -44,15 +54,16 @@ const outputs = profiles.map((profile) => {
   if (packed.status !== 0) throw new Error(packed.stdout + packed.stderr);
   return { profile, output };
 });
-const diagramOutput = resolve(work, 'chinese-diagrams.html');
-const diagramPacked = spawnSync(process.execPath, [
-  resolve(repo, 'scripts/pack-diagrams.mjs'),
-  resolve(repo, 'examples/diagrams/chinese-diagrams.html'),
-  '--root', repo,
-  '-o', diagramOutput,
-], { encoding: 'utf8' });
-if (diagramPacked.status !== 0) throw new Error(diagramPacked.stdout + diagramPacked.stderr);
-outputs.push({ profile: 'chinese-diagrams', output: diagramOutput });
+const diagramSources = [
+  ['ordinary-diagrams', (() => { const source = resolve(work, 'ordinary-diagrams.src.html'); writeFileSync(source, ordinaryTemplateSource()); return source; })()],
+  ['wide-sequence-stress', resolve(repo, 'examples/diagrams/wide-sequence-stress.html')],
+];
+for (const [profile, source] of diagramSources) {
+  const output = resolve(work, `${profile}.html`);
+  const packed = spawnSync(process.execPath, [resolve(repo, 'scripts/pack-diagrams.mjs'), source, '--root', repo, '-o', output], { encoding: 'utf8' });
+  if (packed.status !== 0) throw new Error(packed.stdout + packed.stderr);
+  outputs.push({ profile, output });
+}
 
 const browser = await chromium.launch({ headless: true, executablePath: chromiumExecutable(chromium) });
 try {
@@ -72,16 +83,33 @@ try {
           const response = await page.locator('.nw-sheet pre').textContent();
           if (!response.includes('# Re: Reviewable Validator') || !response.includes('`strict`')) throw new Error('structured Markdown response did not include the changed decision');
         }
-        if (profile === 'chinese-diagrams') {
+        if (profile === 'ordinary-diagrams') {
           const diagramState = await page.evaluate(() => ({
             svgs: document.querySelectorAll('doc-flow svg, doc-seq svg, doc-machine svg').length,
             text: document.body.textContent,
-            localSequenceScroll: [...document.querySelectorAll('doc-seq .fig-frame')]
-              .some((figure) => figure.scrollWidth > figure.clientWidth + 1),
+            accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toUpperCase(),
+            maxWidth: getComputedStyle(document.querySelector('main')).maxWidth,
+            bodyPaddingLeft: getComputedStyle(document.body).paddingLeft,
+            tldrBorderLeft: getComputedStyle(document.querySelector('.tldr')).borderLeftWidth,
+            h2FontSize: getComputedStyle(document.querySelector('h2')).fontSize,
+            reviewBars: document.querySelectorAll('.nw-bar, .nw-respond, .nw-sheet').length,
           }));
-          if (diagramState.svgs < 3) throw new Error(`Chinese diagram fixture rendered ${diagramState.svgs} SVGs; expected 3`);
-          if (!diagramState.text.includes('订单已受理') || !diagramState.text.includes('返回拒绝原因')) throw new Error('Chinese diagram labels are missing after render');
-          if (viewport.width === 390 && !diagramState.localSequenceScroll) throw new Error('wide sequence does not scroll inside its figure at 390px');
+          if (diagramState.svgs !== 3) throw new Error(`ordinary template rendered ${diagramState.svgs} SVGs; expected 3`);
+          if (!diagramState.text.includes('订单已受理') || !diagramState.text.includes('返回拒绝原因') || !diagramState.text.includes('草稿等待提交') || !diagramState.text.includes('系统正在校验')) throw new Error('Chinese diagram labels are missing after render');
+          const expectedAccent = colorScheme === 'dark' ? '#4EC2B2' : '#0E7C72';
+          if (diagramState.accent !== expectedAccent) throw new Error(`ordinary template accent changed: ${diagramState.accent}`);
+          if (diagramState.maxWidth !== '880px') throw new Error(`ordinary template main max-width changed: ${diagramState.maxWidth}`);
+          if (diagramState.bodyPaddingLeft !== '20px') throw new Error(`ordinary template body padding changed: ${diagramState.bodyPaddingLeft}`);
+          if (diagramState.tldrBorderLeft !== '4px') throw new Error(`ordinary template TLDR border changed: ${diagramState.tldrBorderLeft}`);
+          if (diagramState.h2FontSize !== '22px') throw new Error(`ordinary template h2 changed: ${diagramState.h2FontSize}`);
+          if (diagramState.reviewBars) throw new Error(`ordinary template injected ${diagramState.reviewBars} review controls`);
+        }
+        if (profile === 'wide-sequence-stress' && viewport.width === 390) {
+          const scroll = await page.evaluate(() => {
+            const frame = document.querySelector('doc-seq .dc-frame');
+            return { local: frame.scrollWidth > frame.clientWidth + 1, body: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 };
+          });
+          if (!scroll.local || scroll.body) throw new Error(`wide sequence scroll boundary is wrong: ${JSON.stringify(scroll)}`);
         }
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
         if (overflow) throw new Error(`${profile} has horizontal overflow at ${viewport.width}px`);
@@ -90,7 +118,7 @@ try {
       }
     }
   }
-  console.log('all reviewable profiles and Chinese diagrams passed light/dark browser checks at 1280x800 and 390x844');
+  console.log('all reviewable profiles, ordinary diagrams, and wide-sequence stress passed light/dark browser checks at 1280x800 and 390x844');
 } finally {
   await browser.close();
 }

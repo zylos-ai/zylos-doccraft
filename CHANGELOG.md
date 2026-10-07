@@ -4,6 +4,8 @@
 
 ### Added
 
+- A Doccraft-owned diagram-only browser adapter for `doc-flow`, `doc-seq`, and `doc-machine`. Its styles are container-scoped and it has no review bar, comments, response UI, TOC, or local-storage behavior.
+- Browser gates for the ordinary Doccraft template with three diagrams and a separate seven-participant mobile sequence stress fixture.
 - Opt-in reviewable-document workflow for implementation plans, execution plans, and code-review guides, backed by the Apache-2.0 `html-plan` runtime pinned at commit `f60f0454df3045f724c43c6346ec80bdcc3472b2`.
 - Doccraft-owned profile contracts, representative examples, and `scripts/pack-reviewable.mjs`, which adds profile, structure, remote-resource, and sensitive-content checks before the upstream packer runs.
 - Automated positive and reject-path tests plus desktop/mobile Chromium validation for all three profiles and structured Markdown responses.
@@ -11,8 +13,14 @@
 
 ### Changed
 
+- Ordinary Doccraft pages now link `runtime/diagrams.css` and `runtime/diagrams.js`; the packer retains the pinned html-plan parser/linter but replaces the page-wide review runtime in diagram artifacts.
+- Remote-resource validation rejects protocol-relative URLs in HTML attributes and CSS imports/assets as well as explicit HTTP(S) URLs.
 - `SKILL.md` routes matching requests into the reviewable workflow while preserving the existing general-document workflow as the default.
 - The implementation-plan profile now carries the four validated decision-reasoning rules verbatim and uses mechanical companion markers for doubtful-premise quotations and contract-alternative preference conditions.
+
+### Upgrade note
+
+Previously extracted `vendor/archify/` files were not tracked by the old component manifest, so smart-merge upgrades can preserve them. Once the active hook, lock, scripts, and documentation references are removed, that directory is inert. This release does not delete untracked installed files automatically; operators may review and remove the residue separately.
 
 ## [0.3.0] — 2026-09-01
 
