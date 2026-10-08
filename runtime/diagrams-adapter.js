@@ -58,10 +58,71 @@
     function errBox(_, errors, tag) { if (errors.length) throw new Error(`${tag}: ${errors.join('\n')}`); }
     /* UPSTREAM_RUNTIME */
     const correctLabels = () => {
+      const intersects = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x
+        && a.y < b.y + b.height && a.y + a.height > b.y;
+      const closestPathPoint = (path, target) => {
+        const length = path.getTotalLength(), samples = Math.max(1, Math.ceil(length / 4));
+        let closest = null;
+        for (let i = 0; i <= samples; i++) {
+          const at = length * i / samples, point = path.getPointAtLength(at);
+          const distance = Math.hypot(target.x - point.x, target.y - point.y);
+          if (!closest || distance < closest.distance) closest = { at, point, distance };
+        }
+        return closest;
+      };
+      const moveEdgeLabel = (group, background, texts) => {
+        const path = group.querySelector(':scope > path');
+        if (!path) return;
+        const textBoxes = texts.map((text) => text.getBBox());
+        const left = Math.min(...textBoxes.map((box) => box.x)) - 5;
+        const top = Math.min(...textBoxes.map((box) => box.y)) - 3;
+        const right = Math.max(...textBoxes.map((box) => box.x + box.width)) + 5;
+        const bottom = Math.max(...textBoxes.map((box) => box.y + box.height)) + 3;
+        const box = { x:left, y:top, width:right - left, height:bottom - top };
+        const center = { x:box.x + box.width / 2, y:box.y + box.height / 2 };
+        if (closestPathPoint(path, center).distance <= 24) return;
+
+        const nodeBoxes = [...shadow.querySelectorAll('g.node')].map((node) => node.firstElementChild.getBBox());
+        const labelBoxes = [...shadow.querySelectorAll('g.edge rect.lbl')]
+          .filter((label) => label !== background).map((label) => label.getBBox());
+        const markerPoints = [...shadow.querySelectorAll('g.edge path')].flatMap((edge) => {
+          const edgeLength = edge.getTotalLength(), points = [];
+          if (edge.hasAttribute('marker-end')) points.push(edge.getPointAtLength(edgeLength), edge.getPointAtLength(Math.max(0, edgeLength - 8)));
+          if (edge.hasAttribute('marker-start')) points.push(edge.getPointAtLength(0), edge.getPointAtLength(Math.min(8, edgeLength)));
+          return points;
+        });
+        const length = path.getTotalLength();
+        const ratios = [0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9];
+        for (const ratio of ratios) {
+          const at = length * ratio, point = path.getPointAtLength(at);
+          const before = path.getPointAtLength(Math.max(0, at - 2));
+          const after = path.getPointAtLength(Math.min(length, at + 2));
+          const dx = after.x - before.x, dy = after.y - before.y, magnitude = Math.hypot(dx, dy) || 1;
+          const normal = { x:-dy / magnitude, y:dx / magnitude };
+          const preferred = (center.x - point.x) * normal.x + (center.y - point.y) * normal.y < 0 ? -1 : 1;
+          for (const side of [preferred, -preferred, 0]) {
+            const target = { x:point.x + normal.x * 14 * side, y:point.y + normal.y * 14 * side };
+            const shift = { x:target.x - center.x, y:target.y - center.y };
+            const candidate = { x:box.x + shift.x, y:box.y + shift.y, width:box.width, height:box.height };
+            if (nodeBoxes.some((node) => intersects(candidate, node))) continue;
+            if (labelBoxes.some((label) => intersects(candidate, label))) continue;
+            if (markerPoints.some((marker) => marker.x > candidate.x && marker.x < candidate.x + candidate.width
+              && marker.y > candidate.y && marker.y < candidate.y + candidate.height)) continue;
+            for (const text of texts) {
+              text.setAttribute('x', Number(text.getAttribute('x')) + shift.x);
+              text.setAttribute('y', Number(text.getAttribute('y')) + shift.y);
+            }
+            background.setAttribute('x', Number(background.getAttribute('x')) + shift.x);
+            background.setAttribute('y', Number(background.getAttribute('y')) + shift.y);
+            return;
+          }
+        }
+      };
       for (const group of shadow.querySelectorAll('g.edge, g.tr, g.snote')) {
         const background = group.querySelector('rect.lbl, :scope > rect');
         const texts = [...group.querySelectorAll(':scope > text')];
         if (!background || !texts.length) continue;
+        if (group.matches('g.edge')) moveEdgeLabel(group, background, texts);
         const boxes = texts.map((text) => text.getBBox());
         const left = Math.min(...boxes.map((b) => b.x)), top = Math.min(...boxes.map((b) => b.y));
         const right = Math.max(...boxes.map((b) => b.x + b.width)), bottom = Math.max(...boxes.map((b) => b.y + b.height));

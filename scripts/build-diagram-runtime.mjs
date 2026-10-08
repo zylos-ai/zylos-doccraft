@@ -20,6 +20,9 @@ function between(start, end) {
   return source.slice(a, b);
 }
 let parsers = between('const NW = {};', 'globalThis.HtmlPlan = NW;');
+parsers = patch(parsers,
+  String.raw`/^note\s+(?:over|on)\s+([\w.,\s-]+?)\s*:\s*(.+)$/i`,
+  String.raw`/^note\s+(?:over|on)\s+([\p{L}\p{N}_.,\s-]+?)\s*:\s*(.+)$/iu`);
 // Feed real font widths into the upstream layout before routing and collision avoidance.
 parsers = patch(parsers, 'l.length * 7.3 + pad', 'measure(l, false, 550) + pad');
 parsers = patch(parsers, 'l.length * 6.5 + pad', 'measure(l, true) + pad');
@@ -36,6 +39,17 @@ flow = patch(flow, 'Math.max(...a.lines.map((l) => l.length)) * 7.4 + 44', 'Math
 flow = patch(flow, '112, 240), PAD', '112, Infinity), PAD');
 flow = patch(flow, 'Math.max(...a.lines.map((l) => l.length)) * 7.4 + 24', 'Math.max(...a.lines.map((l) => measure(l, false, 550))) + 24');
 flow = patch(flow, 'Math.max(...lines.map((l) => l.length)) * 6.6 + 20', 'Math.max(...lines.map((l) => measure(l))) + 20');
+flow = patch(flow, 'const n = b.n; const cls =', 'const n = b.n; const hasDetail = !!(n.detail.length || templates[n.id] || n.href); const cls =');
+flow = patch(flow, "(n.detail.length || templates[n.id] || n.href) && 'has-detail'", "hasDetail && 'has-detail'");
+flow = patch(flow,
+  "const g = svg('g', { class: cls, 'data-node': n.id, tabindex: 0 });",
+  "const g = svg('g', { class: cls, 'data-node': n.id, tabindex: hasDetail ? 0 : null });");
+flow = patch(flow,
+  "if (n.detail.length || templates[n.id] || n.href) g.append(svg('text', { class: 'more', x: b.x + b.w - 10, y: b.y + 10 }, '…'));",
+  "if (hasDetail) g.append(svg('text', { class: 'more', x: b.x + b.w - 10, y: b.y + 10 }, '…'));");
+flow = patch(flow,
+  "g.addEventListener('click', open); g.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });",
+  "if (hasDetail) { g.addEventListener('click', open); g.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); }); }");
 const fitStart = flow.indexOf('function fitFigure('), fitEnd = flow.indexOf('function arrowDefs()');
 flow = flow.slice(0, fitStart) + 'function fitFigure(frame, root, width) { root.style.width = width + "px"; frame.dataset.scale = "1"; }\n' + flow.slice(fitEnd);
 let machine = between("define('doc-machine'", "define('doc-tree'");

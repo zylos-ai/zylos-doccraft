@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -16,6 +16,8 @@ const executablePath = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, chromiu
 const work = mkdtempSync(resolve(tmpdir(), 'doccraft-semantics-'));
 const source = resolve(work, 'fixture.html'), output = resolve(work, 'packed.html');
 const chinese = '\u4e2d\u6587\u6807\u7b7e\u5b9e\u9645\u5bbd\u5ea6\u9700\u8981\u5728\u5e03\u5c40\u524d\u8ba1\u7b97';
+const notePlaceholder = 'note over unicode_note_actor: wait for callback';
+const unicodeNote = 'note over \u8ba2\u5355\u63a5\u5165\u7f51\u5173\u670d\u52a1: \u7b49\u5f85\u5f02\u6b65\u56de\u6267';
 const diagram = (tag, lines, attrs='') => `<${tag} ${attrs}><script type="text/plain">${lines.join('\n')}</script></${tag}>`;
 writeFileSync(source, `<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Diagram semantic regression</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 :root { --surface:#fff;--ink:#22252e;--ink2:#5c6270;--accent:#0e7c72;--accent-soft:#e0f0ee;--hairline:#dfe3e1; }
@@ -25,16 +27,25 @@ body { margin:0;padding:20px; } main { max-width:880px;margin:auto; }
 ${diagram('doc-flow',['dir LR',`a = ${chinese} [box accent]`,`  ${chinese}`,`b = ${chinese} [pill green]`,`a <-> b : ${chinese}`,'b -> a : reverse'])}
 ${diagram('doc-flow',['a = A [diamond]','b = B [hex]','a -> b : proceed'])}
 ${diagram('doc-flow',['dir LR','a = Blue [blue]','b = Purple [purple]','c = Ink [ink]','a -> b : next','b -> c : next'])}
+${diagram('doc-flow',['dir LR','a = Order intake gateway\\nvalidates request\\nroutes commands\\ntracks response','b = Batch reconciler','c = Policy review','d = Order ledger','a -> c : x','a -> d : y','b -> c : z','c -> a : retry with validation context'])}
 ${diagram('doc-machine',['machine order initial draft',`state draft "${chinese}" shows #outside set status=changed`,`state done "${chinese}" final`, `draft -submit-> done : ${chinese}`,'done -undo-> draft : reverse'],'dir="LR"')}
 ${diagram('doc-machine',['machine vertical initial one','state one "One"','state two "Two" final','one -next-> two : vertical'],'dir="TB"')}
-${diagram('doc-seq',[`participants: a "${chinese}" b "${chinese}"`,'a -> a : self call','a -> b : message','b --> a : reply',`note over a,b: ${chinese}`])}
+${diagram('doc-seq',[`participants: a "${chinese}" b "${chinese}"`,'a -> a : self call','a -> b : message','b --> a : reply',`note over a,b: ${chinese}`,notePlaceholder])}
 </main></body></html>`);
 const pack = spawnSync(process.execPath, ['scripts/pack-diagrams.mjs', source, '--root', process.cwd(), '-o', output], { encoding:'utf8' });
 assert.equal(pack.status, 0, pack.stdout + pack.stderr);
+writeFileSync(output, readFileSync(output, 'utf8').replace(notePlaceholder, unicodeNote));
 const browser = await chromium.launch({ headless:true, executablePath });
 function inspect() {
   const failures = [];
   const intersects = (a,b) => a.x < b.x+b.width-1 && a.x+a.width > b.x+1 && a.y < b.y+b.height-1 && a.y+a.height > b.y+1;
+  const distanceToPath = (box, path) => {
+    const center = { x:box.x + box.width / 2, y:box.y + box.height / 2 };
+    const length = path.getTotalLength(), samples = Math.max(1, Math.ceil(length / 2));
+    let closest = Infinity;
+    for (let i=0;i<=samples;i++) { const point=path.getPointAtLength(length*i/samples); closest=Math.min(closest,Math.hypot(center.x-point.x,center.y-point.y)); }
+    return closest;
+  };
   for (const host of document.querySelectorAll('doc-flow,doc-seq,doc-machine')) {
     const root = host.shadowRoot, svg = root.querySelector('svg.nw');
     if (!svg || host.dataset.doccraftDiagram === 'error') { failures.push('missing SVG'); continue; }
@@ -57,6 +68,8 @@ function inspect() {
       const box = rect.getBBox();
       if (nodes.some((node) => intersects(box,node))) failures.push('label overlaps node');
       if (labels.slice(i+1).some((other) => intersects(box,other.getBBox()))) failures.push('labels overlap');
+      const ownPath = rect.parentElement.querySelector(':scope > path');
+      if (rect.parentElement.matches('g.edge') && ownPath && distanceToPath(box,ownPath)>24) failures.push('edge label too far from own path');
       for (const text of rect.parentElement.querySelectorAll('text')) {
         const b=text.getBBox(); if (b.x<box.x-1||b.x+b.width>box.x+box.width+1||b.y<box.y-1||b.y+b.height>box.y+box.height+1) failures.push('label exceeds background');
       }
@@ -98,6 +111,9 @@ try {
       await page.screenshot({path:resolve(work,`${width}-${theme}.png`),fullPage:true});
     }
     assert.equal(await page.locator('doc-flow').first().locator('g.edge path[marker-start]').count(),1);
+    const sequenceText = await page.locator('doc-seq').locator('svg').textContent();
+    assert.match(sequenceText, /\u8ba2\u5355\u63a5\u5165\u7f51\u5173\u670d\u52a1/);
+    assert.match(sequenceText, /\u7b49\u5f85\u5f02\u6b65\u56de\u6267/);
     assert.equal(await page.locator('doc-machine').nth(1).locator('g.tr path[marker-end]').count(),1,'explicit TB machine renders its marker in a separate shadow root');
     const secondFlow = page.locator('doc-flow').nth(1);
     const visibleSecondFlow = await secondFlow.screenshot();
@@ -105,6 +121,8 @@ try {
     assert.deepEqual(await secondFlow.screenshot(), visibleSecondFlow, 'hiding the first figure does not remove markers from another shadow root');
     await page.locator('doc-flow').first().evaluate((host) => { host.hidden = false; });
     if (width === 1280) {
+      const beforeLabels = await page.evaluate(() => [...document.querySelectorAll('doc-flow')[3].shadowRoot.querySelectorAll('g.edge rect.lbl')]
+        .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
       const beforeResize = await page.evaluate(() => {
         const root = document.querySelector('doc-machine').shadowRoot;
         const path = root.querySelector('g.tr path[marker-end]');
@@ -118,11 +136,25 @@ try {
       });
       assert.deepEqual(afterResize,beforeResize,'native-size mobile resize preserves the fixed direction and marker definitions');
       await page.setViewportSize({ width,height:844 });
+      await page.waitForTimeout(100);
+      const afterLabels = await page.evaluate(() => [...document.querySelectorAll('doc-flow')[3].shadowRoot.querySelectorAll('g.edge rect.lbl')]
+        .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
+      assert.deepEqual(afterLabels,beforeLabels,'repeated label correction is idempotent across resize');
     }
-    await page.locator('doc-flow').first().locator('g.node').first().click();
+    const detailNode = page.locator('doc-flow').first().locator('g.node').first();
+    assert.equal(await detailNode.getAttribute('tabindex'),'0','detailed flow node remains keyboard interactive');
+    await detailNode.click();
     assert.equal(await page.locator('body > dialog, body > .nw-pop').count(),0,'diagram detail never mounts on document.body');
     assert.equal(await page.locator('doc-flow').first().locator('dialog').count(),1,'diagram detail stays inside its shadow root');
     await page.locator('doc-flow').first().locator('dialog button').click();
+    await detailNode.dispatchEvent('keydown',{ key:'Enter' });
+    assert.equal(await page.locator('doc-flow').first().locator('dialog').count(),1,'detailed flow node keeps Enter-key interaction');
+    await page.locator('doc-flow').first().locator('dialog button').click();
+    const emptyNode = page.locator('doc-flow').nth(1).locator('g.node').first();
+    assert.equal(await emptyNode.getAttribute('tabindex'),null,'flow node without detail is not keyboard interactive');
+    await emptyNode.click();
+    await emptyNode.dispatchEvent('keydown',{ key:'Enter' });
+    assert.equal(await page.locator('doc-flow').nth(1).locator('dialog').count(),0,'flow node without detail does not open an empty dialog');
     await page.locator('doc-machine').locator('g.st[data-state="done"]').click();
     assert.equal(await page.evaluate(()=>document.querySelector('doc-machine').shadowRoot.querySelector('doc-machine').dataset.state),'done');
     assert.equal(await page.locator('#outside').textContent(),'unchanged'); assert.equal(await page.locator('#outside').isVisible(),true);
@@ -133,6 +165,8 @@ try {
     assert.ok((await page.evaluate(inspect)).some(value=>value.startsWith('unreadable text')),'gate rejects shrunken text');
     await page.evaluate(()=> { const svg=document.querySelector('doc-flow').shadowRoot.querySelector('svg'), labels=svg.querySelectorAll('g.edge rect.lbl');for(const attr of ['x','y','width','height']) labels[1].setAttribute(attr,labels[0].getAttribute(attr)); });
     assert.ok((await page.evaluate(inspect)).includes('labels overlap'),'gate rejects overlapping reverse labels');
+    await page.evaluate(()=> { const group=document.querySelectorAll('doc-flow')[3].shadowRoot.querySelector('g.edge');for(const element of group.querySelectorAll(':scope > rect.lbl, :scope > text')) element.setAttribute('x',Number(element.getAttribute('x'))+100); });
+    assert.ok((await page.evaluate(inspect)).includes('edge label too far from own path'),'gate rejects a label displaced from its own path');
     await page.close();
   }
   console.log(`Diagram semantic and reject gates passed. Screenshots: ${work}`);

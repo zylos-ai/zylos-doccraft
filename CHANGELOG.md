@@ -13,6 +13,7 @@
 
 ### Changed
 
+- Native diagram edge labels are corrected back toward their own path without crossing nodes; empty flow nodes are no longer interactive, while sequence notes accept Unicode actor IDs.
 - Ordinary Doccraft pages now link `runtime/diagrams.css` and `runtime/diagrams.js`; the packer retains the pinned html-plan parser/linter but replaces the page-wide review runtime in diagram artifacts.
 - Remote-resource validation rejects protocol-relative URLs in HTML attributes and CSS imports/assets as well as explicit HTTP(S) URLs.
 - `SKILL.md` routes matching requests into the reviewable workflow while preserving the existing general-document workflow as the default.

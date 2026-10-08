@@ -135,7 +135,7 @@ NW.parseSeq = function parseSeq(text) {
     let mm;
     if ((mm = line.match(/^participants?\s*:\s*(.+)$/i))) { mm[1].match(/[\w.-]+(?:\s+"[^"]*")?/g).forEach((p) => { const q = p.match(/^([\w.-]+)(?:\s+"([^"]*)")?/); actor(q[1], q[2]); }); return; }
     if ((mm = line.match(/^---+\s*(.*?)\s*-*$/))) { m.steps.push({ kind: 'div', text: mm[1] }); return; }
-    if ((mm = line.match(/^note\s+(?:over|on)\s+([\w.,\s-]+?)\s*:\s*(.+)$/i))) { const ids = mm[1].split(/[\s,]+/).filter(Boolean); ids.forEach((a) => actor(a)); m.steps.push({ kind: 'note', over: ids, text: mm[2] }); return; }
+    if ((mm = line.match(/^note\s+(?:over|on)\s+([\p{L}\p{N}_.,\s-]+?)\s*:\s*(.+)$/iu))) { const ids = mm[1].split(/[\s,]+/).filter(Boolean); ids.forEach((a) => actor(a)); m.steps.push({ kind: 'note', over: ids, text: mm[2] }); return; }
     let [mark, rest] = takeMark(line);
     if ((mm = rest.match(EDGE_RE))) { const [, a, , op, b, label] = mm; actor(a); actor(b); m.steps.push({ kind: 'msg', from: a, to: b, text: (label || '').trim(), dash: op === '-->' || op === '..>', lost: op === '-x->', mark, ln }); return; }
     m.errors.push(`line ${ln}: couldn't parse "${line}" — expected  a -> b : message  |  a --> b : reply  |  note over a: text  |  --- label ---`);
@@ -518,11 +518,11 @@ define('doc-flow', (el) => {
   });
   const templates = {}; $$(':scope > template[data-node], :scope > template[for]', el).forEach((t) => { templates[t.dataset.node || t.getAttribute('for')] = t; });
   Object.values(lay.boxes).forEach((b) => {
-    const n = b.n; const cls = ['node', n.tone && 't-' + n.tone, n.mark, (n.detail.length || templates[n.id] || n.href) && 'has-detail'].filter(Boolean).join(' ');
-    const g = svg('g', { class: cls, 'data-node': n.id, tabindex: 0 }); g.append(shapePath(n.shape, b.x, b.y, b.w, b.h));
+    const n = b.n; const hasDetail = !!(n.detail.length || templates[n.id] || n.href); const cls = ['node', n.tone && 't-' + n.tone, n.mark, hasDetail && 'has-detail'].filter(Boolean).join(' ');
+    const g = svg('g', { class: cls, 'data-node': n.id, tabindex: hasDetail ? 0 : null }); g.append(shapePath(n.shape, b.x, b.y, b.w, b.h));
     const subs = n.subLines || []; const lh = 16, slh = 13.5; let ty = b.cy - ((n.lines.length - 1) * lh + subs.length * slh) / 2; const tx = b.cx + (n.shape === 'actor' ? 10 : 0);
     n.lines.forEach((ln) => { g.append(svg('text', { x: tx, y: ty }, ln)); ty += lh; }); ty -= 2; subs.forEach((ln) => { g.append(svg('text', { class: 'sub', x: tx, y: ty }, ln)); ty += slh; });
-    if (n.detail.length || templates[n.id] || n.href) g.append(svg('text', { class: 'more', x: b.x + b.w - 10, y: b.y + 10 }, '…'));
+    if (hasDetail) g.append(svg('text', { class: 'more', x: b.x + b.w - 10, y: b.y + 10 }, '…'));
     root.append(g);
     const key = `flow:${el.id || $$('doc-flow').indexOf(el)}:${n.id}`;
     if (S.comments[key]) g.classList.add('has-comment');
@@ -534,7 +534,7 @@ define('doc-flow', (el) => {
       openComment({ key, label: `${secLabel(el)} › diagram${el.getAttribute('caption') ? ' “' + words(el.getAttribute('caption'), 5) + '”' : ''} › node “${n.label.replace(/\n/g, ' ')}”`, anchor: g, extra, onState: (on) => g.classList.toggle('has-comment', on) });
       requestAnimationFrame(() => { if (pop) { upgradeWithin(pop); } });
     };
-    g.addEventListener('click', open); g.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+    if (hasDetail) { g.addEventListener('click', open); g.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); }); }
   });
   $$(':scope > script', el).forEach((s) => s.remove()); [...el.childNodes].forEach((n) => { if (n.nodeType === 3) n.remove(); });
   const frame = h('div', { class: 'fig-frame' }); frame.append(root);
@@ -705,10 +705,71 @@ define('doc-machine', (el) => {
 
 
     const correctLabels = () => {
+      const intersects = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x
+        && a.y < b.y + b.height && a.y + a.height > b.y;
+      const closestPathPoint = (path, target) => {
+        const length = path.getTotalLength(), samples = Math.max(1, Math.ceil(length / 4));
+        let closest = null;
+        for (let i = 0; i <= samples; i++) {
+          const at = length * i / samples, point = path.getPointAtLength(at);
+          const distance = Math.hypot(target.x - point.x, target.y - point.y);
+          if (!closest || distance < closest.distance) closest = { at, point, distance };
+        }
+        return closest;
+      };
+      const moveEdgeLabel = (group, background, texts) => {
+        const path = group.querySelector(':scope > path');
+        if (!path) return;
+        const textBoxes = texts.map((text) => text.getBBox());
+        const left = Math.min(...textBoxes.map((box) => box.x)) - 5;
+        const top = Math.min(...textBoxes.map((box) => box.y)) - 3;
+        const right = Math.max(...textBoxes.map((box) => box.x + box.width)) + 5;
+        const bottom = Math.max(...textBoxes.map((box) => box.y + box.height)) + 3;
+        const box = { x:left, y:top, width:right - left, height:bottom - top };
+        const center = { x:box.x + box.width / 2, y:box.y + box.height / 2 };
+        if (closestPathPoint(path, center).distance <= 24) return;
+
+        const nodeBoxes = [...shadow.querySelectorAll('g.node')].map((node) => node.firstElementChild.getBBox());
+        const labelBoxes = [...shadow.querySelectorAll('g.edge rect.lbl')]
+          .filter((label) => label !== background).map((label) => label.getBBox());
+        const markerPoints = [...shadow.querySelectorAll('g.edge path')].flatMap((edge) => {
+          const edgeLength = edge.getTotalLength(), points = [];
+          if (edge.hasAttribute('marker-end')) points.push(edge.getPointAtLength(edgeLength), edge.getPointAtLength(Math.max(0, edgeLength - 8)));
+          if (edge.hasAttribute('marker-start')) points.push(edge.getPointAtLength(0), edge.getPointAtLength(Math.min(8, edgeLength)));
+          return points;
+        });
+        const length = path.getTotalLength();
+        const ratios = [0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9];
+        for (const ratio of ratios) {
+          const at = length * ratio, point = path.getPointAtLength(at);
+          const before = path.getPointAtLength(Math.max(0, at - 2));
+          const after = path.getPointAtLength(Math.min(length, at + 2));
+          const dx = after.x - before.x, dy = after.y - before.y, magnitude = Math.hypot(dx, dy) || 1;
+          const normal = { x:-dy / magnitude, y:dx / magnitude };
+          const preferred = (center.x - point.x) * normal.x + (center.y - point.y) * normal.y < 0 ? -1 : 1;
+          for (const side of [preferred, -preferred, 0]) {
+            const target = { x:point.x + normal.x * 14 * side, y:point.y + normal.y * 14 * side };
+            const shift = { x:target.x - center.x, y:target.y - center.y };
+            const candidate = { x:box.x + shift.x, y:box.y + shift.y, width:box.width, height:box.height };
+            if (nodeBoxes.some((node) => intersects(candidate, node))) continue;
+            if (labelBoxes.some((label) => intersects(candidate, label))) continue;
+            if (markerPoints.some((marker) => marker.x > candidate.x && marker.x < candidate.x + candidate.width
+              && marker.y > candidate.y && marker.y < candidate.y + candidate.height)) continue;
+            for (const text of texts) {
+              text.setAttribute('x', Number(text.getAttribute('x')) + shift.x);
+              text.setAttribute('y', Number(text.getAttribute('y')) + shift.y);
+            }
+            background.setAttribute('x', Number(background.getAttribute('x')) + shift.x);
+            background.setAttribute('y', Number(background.getAttribute('y')) + shift.y);
+            return;
+          }
+        }
+      };
       for (const group of shadow.querySelectorAll('g.edge, g.tr, g.snote')) {
         const background = group.querySelector('rect.lbl, :scope > rect');
         const texts = [...group.querySelectorAll(':scope > text')];
         if (!background || !texts.length) continue;
+        if (group.matches('g.edge')) moveEdgeLabel(group, background, texts);
         const boxes = texts.map((text) => text.getBBox());
         const left = Math.min(...boxes.map((b) => b.x)), top = Math.min(...boxes.map((b) => b.y));
         const right = Math.max(...boxes.map((b) => b.x + b.width)), bottom = Math.max(...boxes.map((b) => b.y + b.height));
