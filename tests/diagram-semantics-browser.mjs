@@ -16,6 +16,7 @@ const executablePath = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, chromiu
 const work = mkdtempSync(resolve(tmpdir(), 'doccraft-semantics-'));
 const source = resolve(work, 'fixture.html'), output = resolve(work, 'packed.html');
 const chinese = '\u4e2d\u6587\u6807\u7b7e\u5b9e\u9645\u5bbd\u5ea6\u9700\u8981\u5728\u5e03\u5c40\u524d\u8ba1\u7b97';
+const hiddenEdge = '\u9690\u85cf\u8fb9', reverse = '\u53cd\u5411';
 const notePlaceholder = 'note over unicode_note_actor: wait for callback';
 const unicodeNote = 'note over \u8ba2\u5355\u63a5\u5165\u7f51\u5173\u670d\u52a1: \u7b49\u5f85\u5f02\u6b65\u56de\u6267';
 const diagram = (tag, lines, attrs='') => `<${tag} ${attrs}><script type="text/plain">${lines.join('\n')}</script></${tag}>`;
@@ -31,6 +32,10 @@ ${diagram('doc-flow',['dir LR','a = Order intake gateway\\nvalidates request\\nr
 ${diagram('doc-machine',['machine order initial draft',`state draft "${chinese}" shows #outside set status=changed`,`state done "${chinese}" final`, `draft -submit-> done : ${chinese}`,'done -undo-> draft : reverse'],'dir="LR"')}
 ${diagram('doc-machine',['machine vertical initial one','state one "One"','state two "Two" final','one -next-> two : vertical'],'dir="TB"')}
 ${diagram('doc-seq',[`participants: a "${chinese}" b "${chinese}"`,'a -> a : self call','a -> b : message','b --> a : reply',`note over a,b: ${chinese}`,notePlaceholder])}
+<section id="hidden-diagrams" style="display:none">
+${diagram('doc-flow',['dir LR','x = X','y = Y',`x -> y : ${hiddenEdge}`,`y -> x : ${reverse}`])}
+${diagram('doc-machine',['machine hidden initial draft','state draft "Hidden draft"','state done "Hidden done" final','draft -submit-> done : hidden forward','done -undo-> draft : hidden reverse'],'dir="LR"')}
+</section>
 </main></body></html>`);
 const pack = spawnSync(process.execPath, ['scripts/pack-diagrams.mjs', source, '--root', process.cwd(), '-o', output], { encoding:'utf8' });
 assert.equal(pack.status, 0, pack.stdout + pack.stderr);
@@ -93,6 +98,15 @@ try {
     const page = await browser.newPage({ viewport:{ width,height:844 } });
     const errors=[]; page.on('pageerror',error=>errors.push(error.message));
     await page.goto(`file://${output}`); await page.waitForFunction(()=>document.documentElement.dataset.nwReady==='1');
+    const hiddenLayout = await page.locator('#hidden-diagrams > doc-flow').evaluate((host) => ({
+      clientRects:host.getClientRects().length,
+      zeroBoxes:[...host.shadowRoot.querySelectorAll('g.edge text')].every((text) => {
+        const box=text.getBBox(); return box.x===0 && box.y===0 && box.width===0 && box.height===0;
+      }),
+    }));
+    assert.deepEqual(hiddenLayout,{ clientRects:0,zeroBoxes:true },'hidden fixture starts without layout geometry');
+    await page.evaluate(() => { document.querySelector('#hidden-diagrams').style.display = 'block'; });
+    await page.waitForTimeout(100);
     for (const theme of ['light','dark','light']) {
       await page.evaluate((theme)=>document.documentElement.dataset.theme=theme,theme);
       await page.waitForTimeout(100);
@@ -140,6 +154,28 @@ try {
       const afterLabels = await page.evaluate(() => [...document.querySelectorAll('doc-flow')[3].shadowRoot.querySelectorAll('g.edge rect.lbl')]
         .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
       assert.deepEqual(afterLabels,beforeLabels,'repeated label correction is idempotent across resize');
+
+      const hiddenPanel = page.locator('#hidden-diagrams');
+      const hiddenMachine = page.locator('#hidden-diagrams > doc-machine');
+      const beforeHiddenMutation = await hiddenMachine.locator('g.tr rect.lbl').evaluateAll((labels) => labels
+        .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
+      await hiddenPanel.evaluate((panel) => { panel.style.display = 'none'; });
+      await hiddenMachine.locator('g.st[data-state="done"]').evaluate((node) => node.dispatchEvent(new MouseEvent('click',{ bubbles:true })));
+      await page.waitForTimeout(50);
+      assert.equal(await hiddenMachine.evaluate((host) => host.getClientRects().length),0,'hidden state rebuild has no layout geometry');
+      const afterHiddenMutation = await hiddenMachine.locator('g.tr rect.lbl').evaluateAll((labels) => labels
+        .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
+      assert.deepEqual(afterHiddenMutation,beforeHiddenMutation,'MutationObserver skips hidden label correction');
+      await hiddenPanel.evaluate((panel) => { panel.style.display = 'block'; });
+      await page.waitForTimeout(100);
+      assert.deepEqual(await page.evaluate(inspect),[],'hidden state rebuild corrects labels after reveal');
+      const beforeHiddenResize = await hiddenPanel.locator('g.edge rect.lbl, g.tr rect.lbl').evaluateAll((labels) => labels
+        .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
+      await page.setViewportSize({ width:390, height:844 }); await page.waitForTimeout(100);
+      await page.setViewportSize({ width,height:844 }); await page.waitForTimeout(100);
+      const afterHiddenResize = await hiddenPanel.locator('g.edge rect.lbl, g.tr rect.lbl').evaluateAll((labels) => labels
+        .map((rect) => ['x','y','width','height'].map((attr) => rect.getAttribute(attr))));
+      assert.deepEqual(afterHiddenResize,beforeHiddenResize,'revealed hidden labels stay idempotent across resize');
     }
     const detailNode = page.locator('doc-flow').first().locator('g.node').first();
     assert.equal(await detailNode.getAttribute('tabindex'),'0','detailed flow node remains keyboard interactive');
@@ -155,7 +191,7 @@ try {
     await emptyNode.click();
     await emptyNode.dispatchEvent('keydown',{ key:'Enter' });
     assert.equal(await page.locator('doc-flow').nth(1).locator('dialog').count(),0,'flow node without detail does not open an empty dialog');
-    await page.locator('doc-machine').locator('g.st[data-state="done"]').click();
+    await page.locator('main > doc-machine').first().locator('g.st[data-state="done"]').click();
     assert.equal(await page.evaluate(()=>document.querySelector('doc-machine').shadowRoot.querySelector('doc-machine').dataset.state),'done');
     assert.equal(await page.locator('#outside').textContent(),'unchanged'); assert.equal(await page.locator('#outside').isVisible(),true);
     assert.equal(errors.length,0,errors.join('\n'));
