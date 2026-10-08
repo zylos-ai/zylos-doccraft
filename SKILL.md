@@ -1,6 +1,6 @@
 ---
 name: doccraft
-version: 0.3.0
+version: 0.4.0
 description: >-
   Turn a document (research doc, architecture proposal, 方案文档, report, decision
   memo) into a beautiful, human-friendly standalone HTML page — conclusion-first
