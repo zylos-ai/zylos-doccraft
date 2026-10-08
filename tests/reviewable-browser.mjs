@@ -17,7 +17,7 @@ function ordinaryTemplateSource() {
     .replace('<title><!-- 文档标题 --></title>', '<title>普通文档图表回归</title>')
     .replace('<h1><!-- 文档标题 --></h1>', '<h1>普通文档图表回归</h1>')
     .replace('</head>', '<link rel="stylesheet" href="../runtime/diagrams.css"><script src="../runtime/diagrams.js" defer></script></head>')
-    .replace('<footer>', `${diagrams}\n<footer>`);
+    .replace('<footer>', `<h2 id="isolation-heading"><a href=""></a>隔离边界</h2>\n${diagrams}\n<footer>`);
 }
 
 function resolvePlaywright() {
@@ -85,17 +85,25 @@ try {
         }
         if (profile === 'ordinary-diagrams') {
           const diagramState = await page.evaluate(() => ({
-            svgs: document.querySelectorAll('doc-flow svg, doc-seq svg, doc-machine svg').length,
-            text: document.body.textContent,
+            svgs: [...document.querySelectorAll('doc-flow, doc-seq, doc-machine')].reduce((count, host) => count + host.shadowRoot.querySelectorAll('svg').length, 0),
+            text: [...document.querySelectorAll('doc-flow, doc-seq, doc-machine')].flatMap((host) => [...host.shadowRoot.querySelectorAll('svg text, .mc-now')].map((node) => node.textContent)).join('\n'),
             accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toUpperCase(),
             maxWidth: getComputedStyle(document.querySelector('main')).maxWidth,
             bodyPaddingLeft: getComputedStyle(document.body).paddingLeft,
             tldrBorderLeft: getComputedStyle(document.querySelector('.tldr')).borderLeftWidth,
             h2FontSize: getComputedStyle(document.querySelector('h2')).fontSize,
             reviewBars: document.querySelectorAll('.nw-bar, .nw-respond, .nw-sheet').length,
+            rails: document.querySelectorAll('.rail, .nw-toc').length,
+            headingMarkup: document.querySelector('#isolation-heading').innerHTML,
+            storageKeys: Object.keys(localStorage).filter((key) => key.startsWith('nw:')),
+            bodyPopups: document.querySelectorAll('body > dialog, body > .nw-pop').length,
           }));
           if (diagramState.svgs !== 3) throw new Error(`ordinary template rendered ${diagramState.svgs} SVGs; expected 3`);
-          if (!diagramState.text.includes('订单已受理') || !diagramState.text.includes('返回拒绝原因') || !diagramState.text.includes('草稿等待提交') || !diagramState.text.includes('系统正在校验')) throw new Error('Chinese diagram labels are missing after render');
+          if (!diagramState.text.includes('返回拒绝原因') || !diagramState.text.includes('草稿等待提交')) throw new Error(`Chinese diagram labels are missing after render: ${diagramState.text}`);
+          await page.locator('doc-machine').locator('g.st[data-state="checking"]').click();
+          if (!(await page.locator('doc-machine').locator('.mc-now').textContent()).includes('系统正在校验')) throw new Error('state explanation missing after legal transition');
+          await page.locator('doc-machine').locator('g.st[data-state="accepted"]').click();
+          if (!(await page.locator('doc-machine').locator('.mc-now').textContent()).includes('订单已受理')) throw new Error('final state explanation missing after legal transition');
           const expectedAccent = colorScheme === 'dark' ? '#4EC2B2' : '#0E7C72';
           if (diagramState.accent !== expectedAccent) throw new Error(`ordinary template accent changed: ${diagramState.accent}`);
           if (diagramState.maxWidth !== '880px') throw new Error(`ordinary template main max-width changed: ${diagramState.maxWidth}`);
@@ -103,10 +111,14 @@ try {
           if (diagramState.tldrBorderLeft !== '4px') throw new Error(`ordinary template TLDR border changed: ${diagramState.tldrBorderLeft}`);
           if (diagramState.h2FontSize !== '22px') throw new Error(`ordinary template h2 changed: ${diagramState.h2FontSize}`);
           if (diagramState.reviewBars) throw new Error(`ordinary template injected ${diagramState.reviewBars} review controls`);
+          if (diagramState.rails) throw new Error(`ordinary template injected ${diagramState.rails} TOC rails`);
+          if (diagramState.headingMarkup !== '<a href=""></a>隔离边界') throw new Error(`ordinary template heading or empty anchor changed: ${diagramState.headingMarkup}`);
+          if (diagramState.storageKeys.length) throw new Error(`ordinary template wrote review storage: ${diagramState.storageKeys.join(', ')}`);
+          if (diagramState.bodyPopups) throw new Error(`ordinary template mounted ${diagramState.bodyPopups} popups on document.body`);
         }
         if (profile === 'wide-sequence-stress' && viewport.width === 390) {
           const scroll = await page.evaluate(() => {
-            const frame = document.querySelector('doc-seq .dc-frame');
+            const frame = document.querySelector('doc-seq').shadowRoot.querySelector('.fig-frame');
             return { local: frame.scrollWidth > frame.clientWidth + 1, body: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 };
           });
           if (!scroll.local || scroll.body) throw new Error(`wide sequence scroll boundary is wrong: ${JSON.stringify(scroll)}`);

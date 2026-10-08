@@ -1,6 +1,8 @@
 # html-plan Diagram Guide
 
-Use Doccraft's diagram-only adapter for diagrams that a reader must study. Its syntax and lint rules come from the pinned html-plan source, but its CSS and browser runtime are Doccraft-owned and limited to diagram containers. It does not load review comments, response controls, a table of contents, local storage, or page-wide styles. Keep the diagram source in the HTML so later edits change readable text rather than generated SVG paths.
+Use Doccraft's diagram-only adapter for diagrams that a reader must study. Its parsers, layouts, renderers, and styles are extracted from the locked html-plan source by `scripts/build-diagram-runtime.mjs`; the generator fails if the source hash or adaptation boundaries change. Each diagram renders inside its own ShadowRoot. It does not load review comments, response controls, a table of contents, local storage, or page-wide styles. Keep the authoring source in the HTML so later edits change readable text rather than generated SVG paths.
+
+The adapter feeds measured font widths into the upstream layouts, measures SVG label backgrounds, and keeps figures at native size with local scrolling on phones. State interaction remains local to its diagram; bindings cannot change the surrounding document or other diagrams. Theme variables remain inherited so switching themes updates rendered figures.
 
 ## Choose the block by question
 
@@ -15,7 +17,7 @@ Use cards, a table, or `.phases` for a short list that has no important relation
 ## Chinese authoring rules
 
 - Write reader-facing node labels, edge labels, messages, state descriptions, captions, and legends in Chinese when the document is Chinese.
-- Keep machine identifiers ASCII and short (`draft`, `checking`, `done`); put Chinese text after `#` or `:` so the parser remains stable.
+- Keep machine identifiers ASCII and short (`draft`, `checking`, `done`). Use `state draft "草稿" # 等待提交` for a Chinese node label plus state explanation; `#` alone is an explanation shown for the current state, and `:` labels a transition.
 - Keep one idea per label. Move detail into nearby prose instead of shrinking the diagram text.
 - Use the CJK-aware runtime font stack. Do not convert Chinese text to paths or images.
 - Keep `lang="zh-CN"` on a Chinese page and include `<meta name="viewport" content="width=device-width, initial-scale=1">`.

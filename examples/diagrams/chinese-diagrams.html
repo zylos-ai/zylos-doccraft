@@ -46,11 +46,11 @@ check --> api : 拒绝原因
   <doc-machine name="order" caption="失败和取消都是可观察的终止状态。">
     <script type="text/plain">
 machine order initial draft
-state draft # 草稿等待提交。
-state checking # 系统正在校验。
-state accepted final # 订单已受理。
-state rejected final # 订单被拒绝。
-state cancelled final # 用户已取消。
+state draft "草稿" # 草稿等待提交。
+state checking "校验中" # 系统正在校验。
+state accepted "已受理" final # 订单已受理。
+state rejected "已拒绝" final # 订单被拒绝。
+state cancelled "已取消" final # 用户已取消。
 | draft | checking | accepted |
 | cancelled | rejected | . |
 draft -submit-> checking : 提交

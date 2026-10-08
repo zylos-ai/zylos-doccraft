@@ -79,8 +79,8 @@ const adapterCss = readFileSync(resolve(repo, 'runtime/diagrams.css'), 'utf8');
 const adapterJs = readFileSync(resolve(repo, 'runtime/diagrams.js'), 'utf8').replace(/<\/script/gi, '<\\/script');
 const replaceReviewRuntime = (path) => {
   const packed = readFileSync(path, 'utf8')
-    .replace(/<style\s+data-htmlplan>[\s\S]*?<\/style>/i, `<style data-doccraft-diagrams>\n${adapterCss}\n</style>`)
-    .replace(/<script\s+data-htmlplan>[\s\S]*?<\/script>/i, `<script data-doccraft-diagrams>\n${adapterJs}\n</script>`)
+    .replace(/<style\s+data-htmlplan>[\s\S]*?<\/style>/i, () => `<style data-doccraft-diagrams>\n${adapterCss}\n</style>`)
+    .replace(/<script\s+data-htmlplan>[\s\S]*?<\/script>/i, () => `<script data-doccraft-diagrams>\n${adapterJs}\n</script>`)
     .replace(/data-htmlplan-packed/g, 'data-doccraft-diagrams-packed');
   writeFileSync(path, packed);
 };
