@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>宽时序图移动端压力样例</title>
+  <link rel="stylesheet" href="../../runtime/diagrams.css">
+  <script src="../../runtime/diagrams.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>宽时序图移动端压力样例</h1>
+  <doc-seq caption="七个参与者用于验证横向滚动只发生在图内。">
+    <script type="text/plain">
+用户 -> 网关 : 提交
+网关 -> 鉴权 : 验证
+鉴权 --> 网关 : 通过
+网关 -> 订单 : 创建
+订单 -> 库存 : 预占
+库存 -> 支付 : 扣款
+支付 -> 履约 : 发货
+履约 --> 用户 : 已受理
+    </script>
+  </doc-seq>
+</main>
+</body>
+</html>

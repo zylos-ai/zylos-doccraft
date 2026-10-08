@@ -88,6 +88,25 @@ test('remote media is rejected', () => {
   assert.match(result.stderr, /remote src dependency/);
 });
 
+const protocolRelativeCases = [
+  ['src', '<img src="//example.test/leak.png">', /remote src dependency/],
+  ['href', '<link rel="stylesheet" href="//example.test/leak.css">', /remote link dependency/],
+  ['object data', '<object data="//example.test/leak.svg"></object>', /remote object dependency/],
+  ['CSS import', '<style>@import url("//example.test/leak.css");</style>', /remote CSS import/],
+  ['CSS asset', '<style>.leak{background:url(//example.test/leak.png)}</style>', /remote CSS asset/],
+];
+
+for (const [name, payload, expected] of protocolRelativeCases) {
+  test(`reviewable protocol-relative ${name} is rejected`, () => {
+    const dir = mkdtempSync(resolve(tmpdir(), 'doccraft-reviewable-protocol-relative-'));
+    const file = resolve(dir, basename(fixtures['implementation-plan']));
+    writeFileSync(file, readFileSync(fixtures['implementation-plan'], 'utf8').replace('</main>', `${payload}</main>`));
+    const result = run(file, 'implementation-plan');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, expected);
+  });
+}
+
 test('sensitive content is rejected', () => {
   const dir = mkdtempSync(resolve(tmpdir(), 'doccraft-secret-'));
   const file = resolve(dir, basename(fixtures['implementation-plan']));

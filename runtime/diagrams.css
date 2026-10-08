@@ -1,0 +1,17 @@
+/* Outer layout only. Renderer styles live inside each diagram's ShadowRoot. */
+:is(doc-flow, doc-seq, doc-machine) {
+  display: block;
+  max-width: 100%;
+  margin: 18px 0 24px;
+}
+
+:is(doc-flow, doc-seq, doc-machine) > script { display: none; }
+
+:is(doc-flow, doc-seq, doc-machine) .dc-error {
+  white-space: pre-wrap;
+  border: 1px solid var(--threat, #b3423a);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--threat, #b3423a);
+  font: 12px/1.5 ui-monospace, monospace;
+}

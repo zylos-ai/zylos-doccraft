@@ -59,11 +59,11 @@ const plans = [...html.matchAll(/<doc-plan\b/g)];
 if (plans.length !== 1) fail(`expected exactly one <doc-plan>; found ${plans.length}`);
 
 const remoteChecks = [
-  [/<(?:script|img|video|audio|source|iframe|embed|doc-shot)\b[^>]*\bsrc\s*=\s*["']\s*https?:\/\//gi, 'remote src dependency'],
-  [/<link\b[^>]*\bhref\s*=\s*["']\s*https?:\/\//gi, 'remote link dependency'],
-  [/<object\b[^>]*\bdata\s*=\s*["']\s*https?:\/\//gi, 'remote object dependency'],
-  [/@import\s+(?:url\()?\s*["']?https?:\/\//gi, 'remote CSS import'],
-  [/url\(\s*["']?https?:\/\//gi, 'remote CSS asset'],
+  [/<(?:script|img|video|audio|source|iframe|embed|doc-shot)\b[^>]*\bsrc\s*=\s*["']\s*(?:https?:)?\/\//gi, 'remote src dependency'],
+  [/<link\b[^>]*\bhref\s*=\s*["']\s*(?:https?:)?\/\//gi, 'remote link dependency'],
+  [/<object\b[^>]*\bdata\s*=\s*["']\s*(?:https?:)?\/\//gi, 'remote object dependency'],
+  [/@import\s+(?:url\(\s*)?["']?\s*(?:https?:)?\/\//gi, 'remote CSS import'],
+  [/url\(\s*["']?\s*(?:https?:)?\/\//gi, 'remote CSS asset'],
 ];
 for (const [pattern, label] of remoteChecks) if (pattern.test(html)) fail(`${label} is forbidden; reviewable documents must be self-contained`);
 

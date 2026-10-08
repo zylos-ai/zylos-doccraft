@@ -17,7 +17,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test tests/reviewable-validation.test.mjs tests/vendor-lock.test.mjs && node tests/reviewable-browser.mjs",
+    "test": "node --test tests/diagram-validation.test.mjs tests/diagram-runtime.test.mjs tests/reviewable-validation.test.mjs tests/vendor-lock.test.mjs && node tests/reviewable-browser.mjs && node tests/diagram-semantics-browser.mjs",
+    "diagrams:build": "node scripts/build-diagram-runtime.mjs",
     "vendor:check": "node scripts/check-html-plan-vendor.mjs"
   },
   "zylos": {

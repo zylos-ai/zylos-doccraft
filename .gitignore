@@ -1,8 +1,3 @@
 node_modules/
 *.log
 .DS_Store
-
-# Downloaded by hooks/ensure-archify.mjs (pinned release, see vendor/archify.lock.json)
-vendor/archify/
-vendor/.archify-extract/
-vendor/.*.download
